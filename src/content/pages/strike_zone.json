@@ -1,0 +1,25 @@
+{
+  "page": {
+    "title": "Strike Zone Analysis",
+    "locationLabel": "Pitch Location",
+    "heatMapLabel": "Heat Map",
+    "veloByZoneLabel": "Avg Velocity by Zone"
+  },
+  "filters": {
+    "playerLabel": "Player",
+    "sessionLabel": "Session",
+    "pitchTypeLabel": "Pitch Type",
+    "resultLabel": "Result"
+  },
+  "empty": {
+    "title": "Select a player to begin",
+    "subtitle": "Choose a player from the sidebar to explore their pitch location data."
+  },
+  "resultLabels": {
+    "strike": "Strike",
+    "ball": "Ball",
+    "foul": "Foul",
+    "swinging_strike": "Swing & Miss",
+    "hit": "Hit"
+  }
+}

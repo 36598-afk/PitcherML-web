@@ -1,0 +1,11 @@
+{
+  "title": "Analysis Result",
+  "processingTitle": "Analysis in progress",
+  "processingSubtitle": "The AI is processing your video. This can take 30–60 seconds.",
+  "errorTitle": "Analysis failed",
+  "impactSection": "Impact detected",
+  "flightPathTitle": "Ball Flight Path",
+  "rawDataLabel": "Raw API response data",
+  "analyzeAnotherButton": "Analyze another pitch",
+  "backButton": "Back to dashboard"
+}

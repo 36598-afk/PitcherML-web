@@ -1,0 +1,152 @@
+{
+  "pages/home/catcher-mitt": {
+    "requestedSize": {
+      "width": 800,
+      "height": 600,
+      "fit": "cover"
+    },
+    "orientations": "horizontal",
+    "compositions": "close_up",
+    "moods": "dramatic,bold",
+    "graphicalStyles": "photography",
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/1036826382",
+    "searchQuery": "baseball catcher mitt glove close up impact action",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/1226418447",
+      "https://img1.wsimg.com/isteam/getty/2285541507"
+    ],
+    "userModified": false,
+    "createdAt": "2026-07-31T22:24:29.895Z",
+    "lastUpdated": "2026-07-31T22:24:29.895Z",
+    "gettyId": "1036826382",
+    "alternativeGettyIds": [
+      "1226418447",
+      "2285541507"
+    ]
+  },
+  "pages/home/hero-pitcher": {
+    "requestedSize": {
+      "width": 1920,
+      "height": 1080,
+      "fit": "cover"
+    },
+    "orientations": "horizontal",
+    "compositions": "wide_shot",
+    "moods": "dramatic,bold",
+    "graphicalStyles": "photography",
+    "minimumSize": "x_large",
+    "mediaType": "image",
+    "currentUrl": "https://img1.wsimg.com/isteam/getty/2214715226",
+    "searchQuery": "baseball pitcher throwing mound stadium night lights action",
+    "alternatives": [
+      "https://img1.wsimg.com/isteam/getty/2262944826",
+      "https://img1.wsimg.com/isteam/getty/2148699579",
+      "https://img1.wsimg.com/isteam/getty/2255646615",
+      "https://img1.wsimg.com/isteam/getty/2192661460"
+    ],
+    "userModified": false,
+    "createdAt": "2026-07-31T22:24:36.466Z",
+    "lastUpdated": "2026-07-31T22:31:05.597Z",
+    "gettyId": "2214715226",
+    "alternativeGettyIds": [
+      "2262944826",
+      "2148699579",
+      "2255646615",
+      "2192661460"
+    ]
+  },
+  "logo/horizontal": {
+    "mediaType": "logo",
+    "currentUrl": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-transparent-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png",
+    "searchQuery": "A bold condensed wordmark for \"PitcherML\" — the brand name set in a heavy, athle",
+    "alternatives": [],
+    "solidUrlMap": {
+      "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-transparent-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-original-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png"
+    },
+    "mockupUrlMap": {
+      "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-transparent-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-transparent-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png"
+    },
+    "landscapeMockupUrlMap": {},
+    "logoSourceMap": {
+      "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-transparent-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png": {
+        "sessionId": "0784055a-479c-4b13-88b7-3b2a8bd6686d",
+        "logoId": "990a4b82-8a18-4a3d-924c-6de6c3faf804",
+        "groupId": "b7d6ad57-057c-48b8-bf84-2eaad497a168"
+      }
+    },
+    "productMockupsMap": {
+      "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-transparent-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png": [
+        {
+          "type": "mug",
+          "label": "Mug",
+          "url": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-mockup-mug-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png"
+        },
+        {
+          "type": "card",
+          "label": "Business Card",
+          "url": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-mockup-card-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png"
+        },
+        {
+          "type": "tshirt",
+          "label": "T-Shirt",
+          "url": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-mockup-tshirt-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png"
+        },
+        {
+          "type": "box",
+          "label": "Packaging",
+          "url": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-mockup-box-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png"
+        }
+      ]
+    },
+    "productMockups": [
+      {
+        "type": "mug",
+        "label": "Mug",
+        "url": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-mockup-mug-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png"
+      },
+      {
+        "type": "card",
+        "label": "Business Card",
+        "url": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-mockup-card-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png"
+      },
+      {
+        "type": "tshirt",
+        "label": "T-Shirt",
+        "url": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-mockup-tshirt-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png"
+      },
+      {
+        "type": "box",
+        "label": "Packaging",
+        "url": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-mockup-box-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png"
+      }
+    ],
+    "userModified": false,
+    "createdAt": "2026-07-31T22:25:11.911Z",
+    "lastUpdated": "2026-07-31T22:26:03.171Z",
+    "surfaceMode": "dark",
+    "generatedForSurfaceColor": "#0a0d14",
+    "darkSurfaceUrl": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0784055a-479c-4b13-88b7-3b2a8bd6686d/horizontal-transparent-990a4b82-8a18-4a3d-924c-6de6c3faf804/logo-logo.png",
+    "logoGroupId": "b7d6ad57-057c-48b8-bf84-2eaad497a168"
+  },
+  "logo/favicon": {
+    "mediaType": "logo",
+    "currentUrl": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0f52e216-32c3-43e4-97a1-582e584ba9d3/favicon-transparent-87bd9004-5619-4062-b425-7bf336d7bae0/logo-logo.png",
+    "searchQuery": "favicon",
+    "alternatives": [],
+    "logoSourceMap": {
+      "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0f52e216-32c3-43e4-97a1-582e584ba9d3/favicon-transparent-87bd9004-5619-4062-b425-7bf336d7bae0/logo-logo.png": {
+        "sessionId": "0f52e216-32c3-43e4-97a1-582e584ba9d3",
+        "logoId": "87bd9004-5619-4062-b425-7bf336d7bae0",
+        "groupId": "b7d6ad57-057c-48b8-bf84-2eaad497a168"
+      }
+    },
+    "logoGroupId": "b7d6ad57-057c-48b8-bf84-2eaad497a168",
+    "userModified": false,
+    "createdAt": "2026-07-31T22:25:44.971Z",
+    "lastUpdated": "2026-07-31T22:26:03.292Z",
+    "surfaceMode": "dark",
+    "generatedForSurfaceColor": "#0a0d14",
+    "darkSurfaceUrl": "https://isteam.wsimg.com/genai-assistant/logoagent/customer/0a8ba6b5-ec5f-461f-9ef9-3f373d3f4819/session/0f52e216-32c3-43e4-97a1-582e584ba9d3/favicon-transparent-87bd9004-5619-4062-b425-7bf336d7bae0/logo-logo.png"
+  }
+}

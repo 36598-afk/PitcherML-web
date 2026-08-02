@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "title": "Sign In — PitcherML",
+    "description": "Sign in to your PitcherML account to access player profiles and analytics."
+  },
+  "heading": "Sign in",
+  "subheading": "Access your player profiles and analytics.",
+  "emailLabel": "Email",
+  "passwordLabel": "Password",
+  "submitIdle": "Sign in",
+  "submitLoading": "Signing in…",
+  "noAccount": "Don't have an account?",
+  "signUpLink": "Sign up"
+}

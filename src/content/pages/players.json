@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "title": "Player Profiles — PitcherML",
+    "description": "Manage pitcher profiles, view session history, and track performance trends."
+  },
+  "pageTitle": "Players",
+  "addButton": "Add Player",
+  "searchPlaceholder": "Search players…",
+  "emptyTitle": "No players yet",
+  "emptySubtitle": "Add your first player to get started.",
+  "emptySearchTitle": "No players found",
+  "emptySearchSubtitle": "Try a different search.",
+  "selectPromptTitle": "Select a player",
+  "selectPromptSubtitle": "Choose a player from the list to view their profile, session history, and performance trends.",
+  "modal": {
+    "title": "Add Player",
+    "cancelButton": "Cancel",
+    "submitIdle": "Add Player",
+    "submitLoading": "Saving…",
+    "bioLabel": ""
+  },
+  "detail": {
+    "panelTitle": "Player Profile",
+    "careerStatsHeading": "Career Stats",
+    "sessionHistoryHeading": "Session History",
+    "velocityTrendHeading": "Velocity Trend",
+    "noSessionsTitle": "No sessions logged yet.",
+    "noSessionsSubtitle": "Sessions will appear here once pitch data is recorded.",
+    "notEnoughVeloData": "Not enough velocity data yet.",
+    "statSessions": "Sessions",
+    "statTotalPitches": "Total Pitches",
+    "statAvgVelocity": "Avg Velocity",
+    "statMaxVelocity": "Max Velocity",
+    "statPitches": "Pitches",
+    "statStrikeRate": "Strike%",
+    "statAvgVelo": "Avg Velo"
+  }
+}

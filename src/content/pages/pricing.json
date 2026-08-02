@@ -1,0 +1,111 @@
+{
+  "hero": {
+    "eyebrow": "Simple, transparent pricing",
+    "headline": "Pick your plan. Start tracking.",
+    "subheadline": "Whether you're a solo pitcher working on your craft or a coaching staff managing a full roster, PitcherML scales with you."
+  },
+  "tiers": [
+    {
+      "id": "player",
+      "name": "Player",
+      "tagline": "For individual pitchers",
+      "price": "0",
+      "period": "forever",
+      "cta": "Get started free",
+      "ctaHref": "/signup",
+      "highlighted": false,
+      "features": [
+        "1 player profile",
+        "Unlimited pitch sessions",
+        "Strike zone location tracking",
+        "Velocity & spin rate logging",
+        "Session history (last 30 days)",
+        "Pitch mix breakdown",
+        "CSV export"
+      ],
+      "notIncluded": [
+        "Multi-player roster",
+        "Team analytics",
+        "Advanced heat maps",
+        "Priority support"
+      ]
+    },
+    {
+      "id": "coach",
+      "name": "Coach",
+      "tagline": "For pitching coaches",
+      "price": "29",
+      "period": "per month",
+      "cta": "Start 14-day trial",
+      "ctaHref": "/signup",
+      "highlighted": true,
+      "features": [
+        "Up to 10 player profiles",
+        "Unlimited pitch sessions",
+        "Full session history",
+        "Advanced heat zone overlays",
+        "Velocity trend analysis",
+        "Pitch comparison across sessions",
+        "PDF session reports",
+        "Priority email support"
+      ],
+      "notIncluded": [
+        "Unlimited roster",
+        "Team-wide analytics dashboard"
+      ]
+    },
+    {
+      "id": "team",
+      "name": "Team",
+      "tagline": "For organizations & academies",
+      "price": "99",
+      "period": "per month",
+      "cta": "Contact sales",
+      "ctaHref": "/signup",
+      "highlighted": false,
+      "features": [
+        "Unlimited player profiles",
+        "Unlimited pitch sessions",
+        "Full session history",
+        "Advanced heat zone overlays",
+        "Team-wide analytics dashboard",
+        "Multi-coach access",
+        "Velocity & spin rate benchmarking",
+        "PDF & CSV exports",
+        "Custom branding",
+        "Dedicated account manager"
+      ],
+      "notIncluded": []
+    }
+  ],
+  "faq": [
+    {
+      "id": "faq-1",
+      "question": "Can I upgrade or downgrade at any time?",
+      "answer": "Yes. You can change your plan at any time from your account settings. Upgrades take effect immediately; downgrades apply at the end of your billing cycle."
+    },
+    {
+      "id": "faq-2",
+      "question": "Is there a free trial for paid plans?",
+      "answer": "Coach and Team plans both include a 14-day free trial — no credit card required. You'll only be charged after the trial ends if you choose to continue."
+    },
+    {
+      "id": "faq-3",
+      "question": "What happens to my data if I cancel?",
+      "answer": "Your data is yours. You can export all pitch sessions and player profiles as CSV at any time before cancellation. We retain your data for 30 days after cancellation in case you change your mind."
+    },
+    {
+      "id": "faq-4",
+      "question": "Do you offer discounts for high school or college programs?",
+      "answer": "Yes — we offer 40% off Team plans for verified educational institutions. Reach out to our sales team with your institution's details to get started."
+    }
+  ],
+  "cta": {
+    "headline": "Ready to take the mound?",
+    "subheadline": "Join coaches and players already using PitcherML to build smarter pitching arsenals.",
+    "primaryCta": "Start for free",
+    "primaryHref": "/signup",
+    "secondaryCta": "Talk to sales",
+    "secondaryHref": "/signup"
+  }
+}

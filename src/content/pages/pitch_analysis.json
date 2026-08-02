@@ -1,0 +1,35 @@
+{
+  "hero": {
+    "title": "AI Pitch Analysis",
+    "subtitle": "Upload a pitch video to detect ball trajectory, impact type, and flight path using computer vision."
+  },
+  "upload": {
+    "dropTitle": "Drop your pitch video here",
+    "dropSubtitle": "or click to browse — MP4 or MOV, up to 100 MB",
+    "analyzeButton": "Analyze Pitch",
+    "analyzingTitle": "Analyzing your pitch",
+    "analyzingNote": "This can take 30–60 seconds — please keep this tab open",
+    "doneTitle": "Analysis complete",
+    "doneSubtitle": "Redirecting to results…"
+  },
+  "features": [
+    {
+      "id": "f1",
+      "label": "Ball Tracking",
+      "desc": "Frame-by-frame trajectory mapping"
+    },
+    {
+      "id": "f2",
+      "label": "Impact Detection",
+      "desc": "Mitt or bat contact classification"
+    },
+    {
+      "id": "f3",
+      "label": "Flight Path",
+      "desc": "Full path from release to impact"
+    }
+  ],
+  "recent": {
+    "sectionLabel": "Recent analyses"
+  }
+}

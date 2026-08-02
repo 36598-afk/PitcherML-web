@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "title": "Pitch Tracking Dashboard — PitcherML",
+    "description": "Real-time pitch tracking dashboard. Log pitches, view strike zone charts, and analyze velocity trends."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "players": "Players",
+    "strikeZone": "Strike Zone",
+    "videoAnalysis": "Video Analysis"
+  },
+  "noSession": {
+    "title": "No active session",
+    "subtitle": "Select a player and start a new session to begin tracking pitches.",
+    "newSessionButton": "New Session",
+    "addPlayerLink": "Add Your First Player"
+  },
+  "sidebar": {
+    "playerLabel": "Player",
+    "noPlayersText": "No players added yet.",
+    "addPlayerLink": "Add a player →",
+    "sessionsLabel": "Sessions",
+    "noSessionsText": "No sessions yet.",
+    "newSessionButton": "New Session"
+  },
+  "views": {
+    "liveLabel": "Live",
+    "logLabel": "Log"
+  },
+  "panels": {
+    "pitchLocationLabel": "Pitch Location",
+    "velocityByPitchLabel": "Velocity by Pitch",
+    "pitchMixLabel": "Pitch Mix",
+    "logNextPitchLabel": "Log Next Pitch",
+    "pitchLogTitle": "Pitch Log"
+  },
+  "modal": {
+    "title": "New Session",
+    "playerLabel": "Player",
+    "sessionLabelField": "Session Label",
+    "sessionLabelPlaceholder": "e.g. Bullpen — Fastball work",
+    "notesField": "Notes",
+    "notesPlaceholder": "Optional notes…",
+    "cancelButton": "Cancel",
+    "submitIdle": "Start Session",
+    "submitLoading": "Creating…"
+  },
+  "table": {
+    "colNumber": "#",
+    "colType": "Type",
+    "colResult": "Result",
+    "colVelocity": "Velocity",
+    "colSpinRate": "Spin Rate",
+    "colLocation": "Location",
+    "noPitchesText": "No pitches logged yet."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "meta": {
+    "title": "Create Account — PitcherML",
+    "description": "Create your PitcherML account to start tracking pitcher performance."
+  },
+  "heading": "Create account",
+  "subheading": "Start tracking pitcher performance today.",
+  "nameLabel": "Full name",
+  "emailLabel": "Email",
+  "passwordLabel": "Password",
+  "submitIdle": "Create account",
+  "submitLoading": "Creating account…",
+  "hasAccount": "Already have an account?",
+  "signInLink": "Sign in"
+}

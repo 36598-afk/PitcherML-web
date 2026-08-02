@@ -1,0 +1,65 @@
+{
+  "hero": {
+    "headline": "Every Pitch.",
+    "headlineAccent": "Analyzed.",
+    "subhead": "Broadcast-grade pitch tracking, strike zone mapping, and heat zone analytics — built for coaches and players who demand precision.",
+    "ctaPrimary": "Get Started",
+    "ctaSecondary": "Learn More"
+  },
+  "features": {
+    "eyebrow": "Analytics Suite",
+    "headline": "The full picture. Every session.",
+    "subhead": "From pitch location to heat zone overlays — every metric a coach or pitcher needs, in one broadcast-quality dashboard.",
+    "cards": [
+      {
+        "id": "f1",
+        "size": "large",
+        "title": "Strike Zone Heat Map",
+        "description": "Real-time pitch location plotting with heat zone overlays. See exactly where pitches land — and where they should."
+      },
+      {
+        "id": "f2",
+        "size": "medium",
+        "title": "Session History & Trends",
+        "description": "Track performance across sessions. Spot improvement and mechanical drift over time with visual trend charts."
+      },
+      {
+        "id": "f3",
+        "size": "medium",
+        "title": "Pitch Location Charting",
+        "description": "Plot every pitch by location — inside, outside, high, low. Build a complete picture of a pitcher's tendencies."
+      }
+    ]
+  },
+  "howItWorks": {
+    "eyebrow": "How It Works",
+    "headline": "From mound to insight in three steps.",
+    "steps": [
+      {
+        "id": "hw1",
+        "number": "01",
+        "title": "Log Your Session",
+        "description": "Enter pitch locations manually or connect your device. PitcherML records every pitch — type, location, and outcome."
+      },
+      {
+        "id": "hw2",
+        "number": "02",
+        "title": "Visualize Pitch Data",
+        "description": "Instant heat maps and location charts appear after each session. See patterns and tendencies at a glance."
+      },
+      {
+        "id": "hw3",
+        "number": "03",
+        "title": "Improve With Insights",
+        "description": "Review session history, share reports with coaches, and track progress over time."
+      }
+    ]
+  },
+  "cta": {
+    "headline": "Step Into",
+    "headlineAccent": "The Box.",
+    "subhead": "Join coaches and players already using PitcherML to gain the edge. No hardware required to start.",
+    "ctaPrimary": "Get Started",
+    "ctaSecondary": "Learn More"
+  }
+}
