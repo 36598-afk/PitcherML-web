@@ -98,7 +98,7 @@ export default async function handler(req: Request, res: Response) {
 
       if (p.status !== 'done' || p.ballX === null || p.ballY === null ||
           !p.frameWidth || !p.frameHeight || !hasZone) {
-        return { ...base, zoneX: null, zoneY: null, isStrike: null, flightPath: [] as PathPoint[] };
+        return { ...base, frameX: null, frameY: null, zoneX: null, zoneY: null, isStrike: null, flightPath: [] as PathPoint[] };
       }
 
       const fx = p.ballX / p.frameWidth;
@@ -110,27 +110,22 @@ export default async function handler(req: Request, res: Response) {
       grid[b.row][b.col]++;
 
       // Flight path is stored normalised 0-1 against the FRAME by
-      // infer_pitch71; convert each point into zone space too so the
-      // frontend can draw the trace against the same coordinate plane.
+      // infer_pitch71 — kept as-is (frame-relative) here, since the report
+      // now plots everything against the full frame, not a zoomed zone crop.
       let flightPath: PathPoint[] = [];
       try {
         const parsed = p.flightPath ? JSON.parse(p.flightPath) : [];
         if (Array.isArray(parsed)) {
-          flightPath = parsed.map((pt: { frame?: number; x: number; y: number; conf?: number }) => {
-            const z = toZoneSpace(pt.x, pt.y, s.zoneLeft!, s.zoneRight!, s.zoneTop!, s.zoneBottom!);
-            return {
-              frame: pt.frame ?? 0,
-              x: pt.x,          // frame-relative (for drawing over the video)
-              y: pt.y,
-              zx: z.zx,         // zone-relative (for the coordinate plane)
-              zy: z.zy,
-              conf: pt.conf,
-            } as PathPoint;
-          });
+          flightPath = parsed.map((pt: { frame?: number; x: number; y: number; conf?: number }) => ({
+            frame: pt.frame ?? 0,
+            x: pt.x,
+            y: pt.y,
+            conf: pt.conf,
+          } as PathPoint));
         }
       } catch { /* leave empty on malformed JSON */ }
 
-      return { ...base, zoneX: zx, zoneY: zy, isStrike, flightPath };
+      return { ...base, frameX: fx, frameY: fy, zoneX: zx, zoneY: zy, isStrike, flightPath };
     });
 
     const scored = pitches.filter((p) => p.isStrike !== null);

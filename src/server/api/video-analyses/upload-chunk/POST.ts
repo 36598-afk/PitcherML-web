@@ -26,6 +26,7 @@ import { db } from '../../../db/client.js';
 import { pitchVideoAnalyses, pitchSessions, players } from '../../../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { getSecret } from '#airo/secrets';
+import { uploadVideoToStorage } from '../../../storage.js';
 
 // Storage location — configurable so this works on any host (see entry.ts
 // for the matching multer config). Without a persistent volume attached,
@@ -175,10 +176,20 @@ export default async function handler(req: Request, res: Response) {
       rmdirSync(sessionDir);
     } catch {}
 
-    const publicPath = `/uploads/videos/${finalFilename}`;
-    const proto = (req.headers['x-forwarded-proto'] as string | undefined) ?? 'https';
-    const host = (req.headers['x-forwarded-host'] as string | undefined) ?? req.headers.host ?? '';
-    const absoluteVideoUrl = `${proto}://${host}${publicPath}`;
+    // Upload to Backblaze B2 — local disk doesn't survive a redeploy, so this
+    // is the permanent copy. finalPath is only a staging location for
+    // assembling the chunks; it's deleted once the upload succeeds.
+    persistLog('[chunk-upload] uploading to B2', { finalFilename });
+    let absoluteVideoUrl: string;
+    try {
+      absoluteVideoUrl = await uploadVideoToStorage(finalPath, `videos/${finalFilename}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      persistLog('[chunk-upload] B2 upload failed', { error: msg });
+      return res.status(500).json({ error: `Video storage upload failed: ${msg}` });
+    } finally {
+      try { unlinkSync(finalPath); } catch {}
+    }
 
     const pitchId = randomUUID();
     await db.insert(pitchVideoAnalyses).values({

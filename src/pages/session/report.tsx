@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -8,13 +8,18 @@ import { Loader2, AlertCircle, ChevronRight, Target, Grid3x3, Flame, Play, Layou
 /**
  * End-of-session report.
  *
- * Everything here is drawn in ZONE-RELATIVE space: (0,0) is the top-left of
- * the calibrated strike zone and (1,1) is the bottom-right, so a pitch at
- * (0.5, 0.5) caught the middle and anything outside 0-1 missed. The zone is
- * drawn centred and impacts are positioned around it like a coordinate plane.
+ * Everything is plotted in FULL-FRAME coordinates — (0,0) is the top-left of
+ * the camera's video frame, (1,1) is the bottom-right — exactly matching what
+ * the video itself shows. The strike zone is drawn as a box positioned and
+ * sized correctly WITHIN that frame (using the calibrated zoneTop/Bottom/
+ * Left/Right fractions directly), rather than the plot being zoomed into the
+ * zone. This keeps the full pitch flight path in view instead of cropping
+ * out most of it.
  */
 
-interface PathPoint { frame: number; x: number; y: number; zx: number; zy: number; conf?: number }
+interface PathPoint { frame: number; x: number; y: number; conf?: number }
+
+interface ZoneBounds { top: number; bottom: number; left: number; right: number }
 
 interface Pitch {
   id: number;
@@ -27,7 +32,9 @@ interface Pitch {
   errorMessage: string | null;
   frameWidth: number | null;
   frameHeight: number | null;
-  zoneX: number | null;
+  frameX: number | null;   // ball position as a fraction of the FULL frame
+  frameY: number | null;
+  zoneX: number | null;    // same position, zone-relative (used for strike/ball only)
   zoneY: number | null;
   isStrike: boolean | null;
   flightPath: PathPoint[];
@@ -42,65 +49,165 @@ interface Report {
   pitches: Pitch[];
 }
 
-// The plot spans -1 to 2 in zone space (one full zone-width of margin on each
-// side), so misses stay visible instead of being clipped off the edge.
-const PLOT_MIN = -1;
-const PLOT_MAX = 2;
-const SPAN = PLOT_MAX - PLOT_MIN;
+const PAD = 0.06; // small padding around the full frame so edge points aren't clipped
 
-/** zone-space -> 0-100 SVG percentage */
-function plotX(zx: number) { return ((zx - PLOT_MIN) / SPAN) * 100; }
-function plotY(zy: number) { return ((zy - PLOT_MIN) / SPAN) * 100; }
+function px(x: number) { return ((x + PAD) / (1 + PAD * 2)) * 100; }
+function py(y: number) { return ((y + PAD) / (1 + PAD * 2)) * 100; }
 
-function heatColor(t: number): string {
-  // 0 -> deep blue, 0.5 -> cyan/yellow, 1 -> red
-  if (t <= 0) return 'rgba(29,140,248,0.10)';
-  if (t < 0.4) return `rgba(29,140,248,${0.25 + t})`;
-  if (t < 0.7) return `rgba(234,179,8,${0.35 + t * 0.4})`;
-  return `rgba(239,68,68,${0.4 + t * 0.5})`;
+function isBat(p: Pitch) { return p.impactType?.toLowerCase() === 'bat'; }
+function dotColor(p: Pitch): string {
+  if (isBat(p)) return '#f97316'; // orange — contact, distinct from strike/ball
+  return p.isStrike ? '#22c55e' : '#ef4444';
 }
 
-// ─── Coordinate-plane plot ────────────────────────────────────────────────────
+// ─── Strike zone, drawn in real position within the full frame ────────────────
 
-function ZonePlot({ pitches, highlight }: { pitches: Pitch[]; highlight?: Pitch | null }) {
-  const zl = plotX(0), zr = plotX(1), zt = plotY(0), zb = plotY(1);
-
+function ZoneBox({ zone }: { zone: ZoneBounds }) {
+  const l = px(zone.left), r = px(zone.right), t = py(zone.top), b = py(zone.bottom);
   return (
-    <svg viewBox="0 0 100 100" width="100%" style={{ display: 'block', background: '#0a0d14', borderRadius: 8 }}>
-      {/* zone box */}
-      <rect x={zl} y={zt} width={zr - zl} height={zb - zt}
-            fill="rgba(29,140,248,0.06)" stroke="#1d8cf8" strokeWidth={0.6} />
-      {/* inner thirds */}
+    <>
+      <rect x={l} y={t} width={r - l} height={b - t}
+            fill="rgba(29,140,248,0.06)" stroke="#1d8cf8" strokeWidth={0.5} />
       {[1, 2].map((i) => (
         <g key={i}>
-          <line x1={plotX(i / 3)} y1={zt} x2={plotX(i / 3)} y2={zb} stroke="#1d8cf8" strokeWidth={0.25} opacity={0.5} />
-          <line x1={zl} y1={plotY(i / 3)} x2={zr} y2={plotY(i / 3)} stroke="#1d8cf8" strokeWidth={0.25} opacity={0.5} />
+          <line x1={px(zone.left + (zone.right - zone.left) * i / 3)} y1={t}
+                x2={px(zone.left + (zone.right - zone.left) * i / 3)} y2={b}
+                stroke="#1d8cf8" strokeWidth={0.2} opacity={0.5} />
+          <line x1={l} y1={py(zone.top + (zone.bottom - zone.top) * i / 3)}
+                x2={r} y2={py(zone.top + (zone.bottom - zone.top) * i / 3)}
+                stroke="#1d8cf8" strokeWidth={0.2} opacity={0.5} />
         </g>
       ))}
+    </>
+  );
+}
 
+// ─── Session-wide location plot ────────────────────────────────────────────────
+
+function LocationPlot({ pitches, zone, highlight }: { pitches: Pitch[]; zone: ZoneBounds; highlight?: Pitch | null }) {
+  return (
+    <svg viewBox="0 0 100 100" width="100%" style={{ display: 'block', background: '#0a0d14', borderRadius: 8 }}>
+      <ZoneBox zone={zone} />
       {pitches.map((p) => {
-        if (p.zoneX === null || p.zoneY === null) return null;
+        if (p.frameX === null || p.frameY === null) return null;
         const isHi = highlight && highlight.id === p.id;
         return (
-          <g key={p.id}>
-            <circle
-              cx={plotX(p.zoneX)} cy={plotY(p.zoneY)}
-              r={isHi ? 2.6 : 1.7}
-              fill={p.isStrike ? '#22c55e' : '#ef4444'}
-              stroke={isHi ? '#fff' : 'rgba(0,0,0,0.4)'}
-              strokeWidth={isHi ? 0.8 : 0.3}
-              opacity={highlight && !isHi ? 0.25 : 0.9}
-            />
-          </g>
+          <circle
+            key={p.id}
+            cx={px(p.frameX)} cy={py(p.frameY)}
+            r={isHi ? 2.4 : 1.5}
+            fill={dotColor(p)}
+            stroke={isHi ? '#fff' : 'rgba(0,0,0,0.4)'}
+            strokeWidth={isHi ? 0.7 : 0.3}
+            opacity={highlight && !isHi ? 0.25 : 0.9}
+          />
         );
       })}
     </svg>
   );
 }
 
+// ─── Smooth density heatmap (gaussian-blurred, canvas-rendered) ───────────────
+
+function DensityHeatmap({ pitches, zone }: { pitches: Pitch[]; zone: ZoneBounds }) {
+  const points = pitches
+    .filter((p) => p.frameX !== null && p.frameY !== null)
+    .map((p) => ({ x: p.frameX as number, y: p.frameY as number }));
+
+  const dataUrl = useMemo(() => {
+    const RES = 64; // internal render resolution, upscaled by CSS for smoothness
+    const canvas = document.createElement('canvas');
+    canvas.width = RES; canvas.height = RES;
+    const ctx = canvas.getContext('2d');
+    if (!ctx || points.length === 0) return null;
+
+    const density = new Float32Array(RES * RES);
+    const sigma = RES * 0.09; // kernel spread, tuned for a broadcast-style soft blur
+
+    for (const pt of points) {
+      const cx = pt.x * RES, cy = pt.y * RES;
+      const r = Math.ceil(sigma * 3);
+      for (let dy = -r; dy <= r; dy++) {
+        const yy = Math.round(cy + dy);
+        if (yy < 0 || yy >= RES) continue;
+        for (let dx = -r; dx <= r; dx++) {
+          const xx = Math.round(cx + dx);
+          if (xx < 0 || xx >= RES) continue;
+          const d2 = dx * dx + dy * dy;
+          density[yy * RES + xx] += Math.exp(-d2 / (2 * sigma * sigma));
+        }
+      }
+    }
+
+    let max = 0;
+    for (let i = 0; i < density.length; i++) max = Math.max(max, density[i]);
+    if (max === 0) return null;
+
+    const img = ctx.createImageData(RES, RES);
+    for (let i = 0; i < density.length; i++) {
+      const t = density[i] / max;
+      const [r, g, b, a] = heatRGBA(t);
+      img.data[i * 4] = r; img.data[i * 4 + 1] = g; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = a;
+    }
+    ctx.putImageData(img, 0, 0);
+    return canvas.toDataURL();
+  }, [points.map((p) => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join('|')]);
+
+  return (
+    <div className="relative rounded-lg overflow-hidden" style={{ background: '#0a0d14' }}>
+      {dataUrl && (
+        <img
+          src={dataUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full"
+          style={{
+            imageRendering: 'auto',
+            filter: 'blur(3px)',
+            opacity: 0.85,
+            left: `${-PAD / (1 + PAD * 2) * 100}%`,
+            top: `${-PAD / (1 + PAD * 2) * 100}%`,
+            width: `${100 / (1 + PAD * 2)}%`,
+            height: `${100 / (1 + PAD * 2)}%`,
+          }}
+        />
+      )}
+      <svg viewBox="0 0 100 100" width="100%" style={{ display: 'block', position: 'relative' }}>
+        <ZoneBox zone={zone} />
+      </svg>
+      {!dataUrl && (
+        <p className="absolute inset-0 flex items-center justify-center text-xs" style={{ color: '#3a4460' }}>
+          Not enough data yet
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** blue (cold) -> cyan -> yellow -> red (hot), broadcast-style gradient */
+function heatRGBA(t: number): [number, number, number, number] {
+  if (t <= 0) return [0, 0, 0, 0];
+  const stops: [number, number, number, number][] = [
+    [29, 78, 216, 0],    // transparent blue at the very edge
+    [29, 140, 248, 140],
+    [34, 211, 238, 170],
+    [234, 179, 8, 200],
+    [239, 68, 68, 230],
+  ];
+  const scaled = t * (stops.length - 1);
+  const i = Math.min(stops.length - 2, Math.floor(scaled));
+  const f = scaled - i;
+  const a = stops[i], b = stops[i + 1];
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * f),
+    Math.round(a[1] + (b[1] - a[1]) * f),
+    Math.round(a[2] + (b[2] - a[2]) * f),
+    Math.round(a[3] + (b[3] - a[3]) * f),
+  ];
+}
+
 // ─── Single pitch: traced path, two views ─────────────────────────────────────
 
-function PitchTrace({ pitch }: { pitch: Pitch }) {
+function PitchTrace({ pitch, zone }: { pitch: Pitch; zone: ZoneBounds }) {
   const [view, setView] = useState<'plane' | 'video'>('plane');
   const pts = pitch.flightPath ?? [];
 
@@ -110,61 +217,38 @@ function PitchTrace({ pitch }: { pitch: Pitch }) {
         <button
           onClick={() => setView('plane')}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold"
-          style={{
-            background: view === 'plane' ? 'rgba(29,140,248,0.15)' : 'transparent',
-            color: view === 'plane' ? '#1d8cf8' : '#6b7a99',
-          }}
+          style={{ background: view === 'plane' ? 'rgba(29,140,248,0.15)' : 'transparent', color: view === 'plane' ? '#1d8cf8' : '#6b7a99' }}
         >
           <LayoutGrid size={11} /> Zone plot
         </button>
         <button
           onClick={() => setView('video')}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold"
-          style={{
-            background: view === 'video' ? 'rgba(29,140,248,0.15)' : 'transparent',
-            color: view === 'video' ? '#1d8cf8' : '#6b7a99',
-          }}
+          style={{ background: view === 'video' ? 'rgba(29,140,248,0.15)' : 'transparent', color: view === 'video' ? '#1d8cf8' : '#6b7a99' }}
         >
           <Play size={11} /> Video
         </button>
-        <span className="ml-auto text-xs" style={{ color: '#3a4460' }}>
-          {pts.length} detections
-        </span>
+        <span className="ml-auto text-xs" style={{ color: '#3a4460' }}>{pts.length} detections</span>
       </div>
 
       {view === 'plane' ? (
         <svg viewBox="0 0 100 100" width="100%" style={{ display: 'block' }}>
-          {/* zone as context */}
-          <rect x={plotX(0)} y={plotY(0)} width={plotX(1) - plotX(0)} height={plotY(1) - plotY(0)}
-                fill="rgba(29,140,248,0.06)" stroke="#1d8cf8" strokeWidth={0.6} />
-          {[1, 2].map((i) => (
-            <g key={i}>
-              <line x1={plotX(i / 3)} y1={plotY(0)} x2={plotX(i / 3)} y2={plotY(1)} stroke="#1d8cf8" strokeWidth={0.25} opacity={0.5} />
-              <line x1={plotX(0)} y1={plotY(i / 3)} x2={plotX(1)} y2={plotY(i / 3)} stroke="#1d8cf8" strokeWidth={0.25} opacity={0.5} />
-            </g>
-          ))}
-
-          {/* traced flight path, detection to detection */}
+          <ZoneBox zone={zone} />
           {pts.length > 1 && (
             <motion.polyline
-              points={pts.map((p) => `${plotX(p.zx)},${plotY(p.zy)}`).join(' ')}
-              fill="none" stroke="#1d8cf8" strokeWidth={0.7} strokeLinecap="round" strokeLinejoin="round"
+              points={pts.map((p) => `${px(p.x)},${py(p.y)}`).join(' ')}
+              fill="none" stroke="#1d8cf8" strokeWidth={0.6} strokeLinecap="round" strokeLinejoin="round"
               initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.1, ease: 'easeOut' }}
             />
           )}
           {pts.map((p, i) => (
-            <motion.circle
-              key={i} cx={plotX(p.zx)} cy={plotY(p.zy)} r={0.9} fill="#1d8cf8"
-              initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: i * 0.03, duration: 0.2 }}
-            />
+            <motion.circle key={i} cx={px(p.x)} cy={py(p.y)} r={0.8} fill="#1d8cf8"
+                            initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: i * 0.03, duration: 0.2 }} />
           ))}
-          {/* impact */}
-          {pitch.zoneX !== null && pitch.zoneY !== null && (
-            <motion.circle
-              cx={plotX(pitch.zoneX)} cy={plotY(pitch.zoneY)} r={2.2}
-              fill={pitch.isStrike ? '#22c55e' : '#ef4444'} stroke="#fff" strokeWidth={0.5}
-              initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.9, duration: 0.3 }}
-            />
+          {pitch.frameX !== null && pitch.frameY !== null && (
+            <motion.circle cx={px(pitch.frameX)} cy={py(pitch.frameY)} r={2}
+                            fill={dotColor(pitch)} stroke="#fff" strokeWidth={0.4}
+                            initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.9, duration: 0.3 }} />
           )}
         </svg>
       ) : (
@@ -174,26 +258,47 @@ function PitchTrace({ pitch }: { pitch: Pitch }) {
   );
 }
 
-/** Video with the detection dots and zone drawn over it, in frame space. */
+/** Video with the ball-detection trail drawn over it, in the video's own
+ *  native frame coordinates (0-1 = the frame, same as the video element). */
 function VideoTrace({ pitch }: { pitch: Pitch }) {
   const pts = pitch.flightPath ?? [];
+  const [videoOk, setVideoOk] = useState(true);
+
   return (
     <div className="relative" style={{ lineHeight: 0 }}>
-      <video src={pitch.videoUrl} controls className="w-full" style={{ maxHeight: 420, background: '#000' }} />
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none"
-           className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%' }}>
-        {pts.length > 1 && (
-          <polyline points={pts.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')}
-                    fill="none" stroke="#1d8cf8" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
-        )}
-        {pts.map((p, i) => (
-          <circle key={i} cx={p.x * 100} cy={p.y * 100} r={0.7} fill="#1d8cf8" />
-        ))}
-      </svg>
-      <p className="absolute bottom-2 left-2 text-xs px-2 py-1 rounded"
-         style={{ background: 'rgba(0,0,0,0.6)', color: '#6b7a99' }}>
-        Blue dots = tracked ball
-      </p>
+      {videoOk ? (
+        <video
+          src={pitch.videoUrl}
+          controls
+          preload="metadata"
+          className="w-full"
+          style={{ maxHeight: 420, background: '#000' }}
+          onError={() => setVideoOk(false)}
+        />
+      ) : (
+        <div className="flex flex-col items-center justify-center gap-2 py-10" style={{ background: '#000' }}>
+          <AlertCircle size={20} style={{ color: '#6b7a99' }} />
+          <p className="text-xs" style={{ color: '#6b7a99' }}>Video unavailable</p>
+        </div>
+      )}
+      {videoOk && (
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none"
+             className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%' }}>
+          {pts.length > 1 && (
+            <polyline points={pts.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')}
+                      fill="none" stroke="#1d8cf8" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
+          )}
+          {pts.map((p, i) => (
+            <circle key={i} cx={p.x * 100} cy={p.y * 100} r={0.7} fill="#1d8cf8" />
+          ))}
+        </svg>
+      )}
+      {videoOk && (
+        <p className="absolute bottom-2 left-2 text-xs px-2 py-1 rounded"
+           style={{ background: 'rgba(0,0,0,0.6)', color: '#6b7a99' }}>
+          Blue dots = tracked ball
+        </p>
+      )}
     </div>
   );
 }
@@ -235,7 +340,7 @@ export default function SessionReportPage() {
     );
   }
 
-  if (error || !report) {
+  if (error || !report || report.session.zoneTop === null) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#0a0d14' }}>
         <div className="text-center">
@@ -249,8 +354,11 @@ export default function SessionReportPage() {
   }
 
   const { session, summary, grid, pitches } = report;
+  const zone: ZoneBounds = { top: session.zoneTop!, bottom: session.zoneBottom!, left: session.zoneLeft!, right: session.zoneRight! };
   const maxCell = Math.max(1, ...grid.flat());
-  const analyzed = pitches.filter((p) => p.zoneX !== null);
+  const analyzed = pitches.filter((p) => p.frameX !== null);
+  const mittCount = pitches.filter((p) => p.impactType?.toLowerCase() === 'mitt').length;
+  const batCount = pitches.filter((p) => isBat(p)).length;
 
   return (
     <>
@@ -270,9 +378,11 @@ export default function SessionReportPage() {
           <h1 className="text-3xl font-black mb-1" style={{ fontFamily: 'var(--font-heading)', color: '#e8eaf0' }}>
             {session.playerName}
           </h1>
-          <p className="text-sm mb-8" style={{ color: '#6b7a99' }}>{session.label} · Session #{session.id}</p>
+          <p className="text-sm mb-8" style={{ color: '#6b7a99' }}>
+            {session.label} · Session #{session.id}
+            {batCount > 0 && <> · {mittCount} pitched, {batCount} contact</>}
+          </p>
 
-          {/* Summary */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
             {[
               { label: 'Pitches', value: summary.total, color: '#1d8cf8' },
@@ -287,7 +397,7 @@ export default function SessionReportPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
             {/* Locations */}
             <div className="rounded-xl overflow-hidden" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
               <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #1a2240' }}>
@@ -295,59 +405,58 @@ export default function SessionReportPage() {
                 <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Pitch Locations</p>
               </div>
               <div className="p-4">
-                <ZonePlot pitches={analyzed} highlight={selected} />
-                <div className="flex items-center gap-4 mt-3 text-xs" style={{ color: '#6b7a99' }}>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#22c55e' }} /> Strike
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#ef4444' }} /> Ball
-                  </span>
+                <LocationPlot pitches={analyzed} zone={zone} highlight={selected} />
+                <div className="flex items-center gap-3 mt-3 text-xs flex-wrap" style={{ color: '#6b7a99' }}>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#22c55e' }} /> Strike</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#ef4444' }} /> Ball</span>
+                  {batCount > 0 && (
+                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#f97316' }} /> Contact</span>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* 5x5 grid: 3x3 zone + outside ring */}
+            {/* Heat map */}
+            <div className="rounded-xl overflow-hidden" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
+              <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #1a2240' }}>
+                <Flame size={14} style={{ color: '#ef4444' }} />
+                <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Heat Map</p>
+              </div>
+              <div className="p-4">
+                <DensityHeatmap pitches={analyzed} zone={zone} />
+                <p className="text-xs mt-3" style={{ color: '#6b7a99' }}>Brighter = more pitches landed there.</p>
+              </div>
+            </div>
+
+            {/* 5x5 zone breakdown */}
             <div className="rounded-xl overflow-hidden" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
               <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #1a2240' }}>
                 <Grid3x3 size={14} style={{ color: '#1d8cf8' }} />
                 <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Zone Breakdown</p>
-                <span className="ml-auto text-xs" style={{ color: '#3a4460' }}>inner 3×3 = strike zone</span>
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-5 gap-1">
                   {grid.flatMap((row, r) =>
                     row.map((count, c) => {
                       const inZone = r >= 1 && r <= 3 && c >= 1 && c <= 3;
-                      const t = count / maxCell;
                       return (
-                        <div
-                          key={`${r}-${c}`}
-                          className="flex items-center justify-center rounded"
-                          style={{
-                            aspectRatio: '1',
-                            background: count > 0 ? heatColor(t) : 'rgba(255,255,255,0.02)',
-                            border: inZone ? '1px solid rgba(29,140,248,0.5)' : '1px solid #1a2240',
-                          }}
-                        >
-                          <span className="text-xs font-bold"
-                                style={{ color: count > 0 ? '#fff' : '#2d3748' }}>
-                            {count > 0 ? count : ''}
-                          </span>
+                        <div key={`${r}-${c}`} className="flex items-center justify-center rounded"
+                             style={{
+                               aspectRatio: '1',
+                               background: count > 0 ? `rgba(29,140,248,${0.15 + (count / maxCell) * 0.55})` : 'rgba(255,255,255,0.02)',
+                               border: inZone ? '1px solid rgba(29,140,248,0.5)' : '1px solid #1a2240',
+                             }}>
+                          <span className="text-xs font-bold" style={{ color: count > 0 ? '#fff' : '#2d3748' }}>{count > 0 ? count : ''}</span>
                         </div>
                       );
                     }),
                   )}
                 </div>
-                <div className="flex items-center gap-2 mt-3 text-xs" style={{ color: '#6b7a99' }}>
-                  <Flame size={11} style={{ color: '#ef4444' }} />
-                  Brighter = more pitches. Outer ring = missed the zone.
-                </div>
+                <p className="text-xs mt-3" style={{ color: '#6b7a99' }}>Inner 3×3 = strike zone. Outer ring = missed.</p>
               </div>
             </div>
           </div>
 
-          {/* Pitch by pitch */}
           <h2 className="text-lg font-black mb-3" style={{ fontFamily: 'var(--font-heading)', color: '#e8eaf0' }}>
             Pitch by Pitch
           </h2>
@@ -357,33 +466,25 @@ export default function SessionReportPage() {
                    style={{ background: '#0f1420', border: '1px solid #1a2240' }}
                    onMouseEnter={() => setSelected(p)} onMouseLeave={() => setSelected(null)}>
                 <div className="px-5 py-3 flex items-center gap-3" style={{ borderBottom: '1px solid #1a2240' }}>
-                  <span className="text-sm font-black" style={{ fontFamily: 'var(--font-heading)', color: '#e8eaf0' }}>
-                    #{p.pitchNumber}
-                  </span>
-                  {p.isStrike !== null && (
+                  <span className="text-sm font-black" style={{ fontFamily: 'var(--font-heading)', color: '#e8eaf0' }}>#{p.pitchNumber}</span>
+                  {isBat(p) ? (
+                    <span className="px-2 py-0.5 rounded text-xs font-bold" style={{ background: 'rgba(249,115,22,0.12)', color: '#f97316' }}>
+                      CONTACT
+                    </span>
+                  ) : p.isStrike !== null && (
                     <span className="px-2 py-0.5 rounded text-xs font-bold"
-                          style={{
-                            background: p.isStrike ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
-                            color: p.isStrike ? '#22c55e' : '#ef4444',
-                          }}>
+                          style={{ background: p.isStrike ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)', color: p.isStrike ? '#22c55e' : '#ef4444' }}>
                       {p.isStrike ? 'STRIKE' : 'BALL'}
                     </span>
                   )}
-                  {p.impactType && (
-                    <span className="text-xs capitalize" style={{ color: '#6b7a99' }}>{p.impactType}</span>
-                  )}
-                  {p.status === 'error' && (
-                    <span className="text-xs" style={{ color: '#f87171' }}>{p.errorMessage ?? 'Failed'}</span>
-                  )}
-                  {p.zoneX !== null && p.zoneY !== null && (
-                    <span className="ml-auto text-xs font-mono" style={{ color: '#3a4460' }}>
-                      ({p.zoneX.toFixed(2)}, {p.zoneY.toFixed(2)})
-                    </span>
+                  {p.status === 'error' && <span className="text-xs" style={{ color: '#f87171' }}>{p.errorMessage ?? 'Failed'}</span>}
+                  {p.frameX !== null && p.frameY !== null && (
+                    <span className="ml-auto text-xs font-mono" style={{ color: '#3a4460' }}>({p.frameX.toFixed(2)}, {p.frameY.toFixed(2)})</span>
                   )}
                 </div>
                 {p.status === 'done' && (
                   <div className="p-4">
-                    <PitchTrace pitch={p} />
+                    <PitchTrace pitch={p} zone={zone} />
                   </div>
                 )}
               </div>
