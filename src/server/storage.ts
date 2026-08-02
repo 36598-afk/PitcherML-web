@@ -29,9 +29,9 @@ let client: S3Client | null = null;
 function getClient(): S3Client {
   if (client) return client;
 
-  const keyId = process.env.B2_KEY_ID;
-  const appKey = process.env.B2_APPLICATION_KEY;
-  const endpoint = process.env.B2_ENDPOINT;
+  const keyId = process.env.B2_KEY_ID?.trim();
+  const appKey = process.env.B2_APPLICATION_KEY?.trim();
+  const endpoint = process.env.B2_ENDPOINT?.trim();
 
   if (!keyId || !appKey || !endpoint) {
     throw new Error(
@@ -39,9 +39,20 @@ function getClient(): S3Client {
     );
   }
 
+  // Backblaze's region is embedded in the endpoint hostname, e.g.
+  // "s3.us-west-002.backblazeb2.com" -> "us-west-002". The AWS SDK still
+  // wants a region string even for a non-AWS endpoint.
+  const regionMatch = endpoint.match(/s3\.([a-z0-9-]+)\.backblazeb2\.com/i);
+  const region = regionMatch ? regionMatch[1] : 'us-east-1';
+
   client = new S3Client({
     endpoint,
-    region: 'auto',
+    region,
+    // Backblaze (like most S3-compatible providers) requires path-style
+    // addressing (endpoint/bucket/key). The AWS SDK defaults to
+    // virtual-hosted-style (bucket.endpoint/key) unless told otherwise,
+    // which was almost certainly producing the "Invalid URL" error.
+    forcePathStyle: true,
     credentials: { accessKeyId: keyId, secretAccessKey: appKey },
   });
   return client;
@@ -49,8 +60,8 @@ function getClient(): S3Client {
 
 /** Uploads a local file to B2 and returns its public download URL. */
 export async function uploadVideoToStorage(localPath: string, key: string): Promise<string> {
-  const bucket = process.env.B2_BUCKET_NAME;
-  const endpoint = process.env.B2_ENDPOINT;
+  const bucket = process.env.B2_BUCKET_NAME?.trim();
+  const endpoint = process.env.B2_ENDPOINT?.trim();
   if (!bucket || !endpoint) {
     throw new Error('B2_BUCKET_NAME or B2_ENDPOINT is not set.');
   }
