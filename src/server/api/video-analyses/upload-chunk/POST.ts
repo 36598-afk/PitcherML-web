@@ -260,6 +260,7 @@ export default async function handler(req: Request, res: Response) {
         combinedConf: typeof runpodResult.combined_conf === 'number' ? runpodResult.combined_conf : null,
         frameWidth: typeof runpodResult.frame_width === 'number' ? runpodResult.frame_width : null,
         frameHeight: typeof runpodResult.frame_height === 'number' ? runpodResult.frame_height : null,
+        fps: typeof runpodResult.fps === 'number' ? runpodResult.fps : null,
         flightPath: runpodResult.flight_path !== undefined ? JSON.stringify(runpodResult.flight_path) : null,
         pathPoints: runpodResult.path_points !== undefined ? JSON.stringify(runpodResult.path_points) : null,
         errorMessage: null,

@@ -132,6 +132,7 @@ export const pitchVideoAnalyses = mysqlTable('pitch_video_analyses', {
   pathPoints: text('path_points'),   // JSON array of {x,y} points
   frameWidth: int('frame_width'),
   frameHeight: int('frame_height'),
+  fps: float('fps'),
   errorMessage: text('error_message'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow().onUpdateNow(),

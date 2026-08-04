@@ -92,6 +92,7 @@ export default async function handler(req: Request, res: Response) {
         videoUrl: p.videoUrl,
         errorMessage: p.errorMessage,
         frameWidth: p.frameWidth,
+        fps: p.fps,
         frameHeight: p.frameHeight,
         createdAt: p.createdAt,
       };

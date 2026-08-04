@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -31,6 +31,7 @@ interface Pitch {
   videoUrl: string;
   errorMessage: string | null;
   frameWidth: number | null;
+  fps: number | null;
   frameHeight: number | null;
   frameX: number | null;   // ball position as a fraction of the FULL frame
   frameY: number | null;
@@ -164,8 +165,8 @@ function DensityHeatmap({ pitches, zone }: { pitches: Pitch[]; zone: ZoneBounds 
             imageRendering: 'auto',
             filter: 'blur(3px)',
             opacity: 0.85,
-            left: `${-PAD / (1 + PAD * 2) * 100}%`,
-            top: `${-PAD / (1 + PAD * 2) * 100}%`,
+            left: `${(PAD / (1 + PAD * 2)) * 100}%`,
+            top: `${(PAD / (1 + PAD * 2)) * 100}%`,
             width: `${100 / (1 + PAD * 2)}%`,
             height: `${100 / (1 + PAD * 2)}%`,
           }}
@@ -181,6 +182,26 @@ function DensityHeatmap({ pitches, zone }: { pitches: Pitch[]; zone: ZoneBounds 
       )}
     </div>
   );
+}
+
+/** Grid-cell version of the heat gradient: 0 = cold blue, 1 = hot red,
+ *  as a solid CSS color with adjustable opacity. */
+function gridHeatColor(t: number, alpha: number): string {
+  const stops: [number, number, number][] = [
+    [29, 78, 216],    // blue (cold / 0%)
+    [34, 211, 238],   // cyan
+    [234, 179, 8],    // yellow
+    [239, 68, 68],    // red (hot)
+  ];
+  const clamped = Math.max(0, Math.min(1, t));
+  const scaled = clamped * (stops.length - 1);
+  const i = Math.min(stops.length - 2, Math.floor(scaled));
+  const f = scaled - i;
+  const a = stops[i], b = stops[i + 1];
+  const r = Math.round(a[0] + (b[0] - a[0]) * f);
+  const g = Math.round(a[1] + (b[1] - a[1]) * f);
+  const bl = Math.round(a[2] + (b[2] - a[2]) * f);
+  return `rgba(${r},${g},${bl},${alpha})`;
 }
 
 /** blue (cold) -> cyan -> yellow -> red (hot), broadcast-style gradient */
@@ -258,22 +279,34 @@ function PitchTrace({ pitch, zone }: { pitch: Pitch; zone: ZoneBounds }) {
   );
 }
 
-/** Video with the ball-detection trail drawn over it, in the video's own
- *  native frame coordinates (0-1 = the frame, same as the video element). */
+/** Video with the ball-detection trail revealed progressively, in sync with
+ *  actual playback — a dot appears exactly when the video reaches the
+ *  moment that detection happened, not all at once regardless of where
+ *  playback is. Falls back to a reasonable default fps for pitches
+ *  analyzed before this field started being saved. */
 function VideoTrace({ pitch }: { pitch: Pitch }) {
   const pts = pitch.flightPath ?? [];
+  const fps = pitch.fps ?? 30;
   const [videoOk, setVideoOk] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Only reveal points whose frame has actually been reached by playback.
+  const visiblePts = pts.filter((p) => p.frame / fps <= currentTime);
 
   return (
     <div className="relative" style={{ lineHeight: 0 }}>
       {videoOk ? (
         <video
+          ref={videoRef}
           src={pitch.videoUrl}
           controls
           preload="metadata"
           className="w-full"
           style={{ maxHeight: 420, background: '#000' }}
           onError={() => setVideoOk(false)}
+          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+          onSeeking={(e) => setCurrentTime(e.currentTarget.currentTime)}
         />
       ) : (
         <div className="flex flex-col items-center justify-center gap-2 py-10" style={{ background: '#000' }}>
@@ -284,19 +317,23 @@ function VideoTrace({ pitch }: { pitch: Pitch }) {
       {videoOk && (
         <svg viewBox="0 0 100 100" preserveAspectRatio="none"
              className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%' }}>
-          {pts.length > 1 && (
-            <polyline points={pts.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')}
+          {visiblePts.length > 1 && (
+            <polyline points={visiblePts.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')}
                       fill="none" stroke="#1d8cf8" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
           )}
-          {pts.map((p, i) => (
-            <circle key={i} cx={p.x * 100} cy={p.y * 100} r={0.7} fill="#1d8cf8" />
-          ))}
+          {visiblePts.map((p, i) => {
+            const isLatest = i === visiblePts.length - 1;
+            return (
+              <circle key={i} cx={p.x * 100} cy={p.y * 100} r={isLatest ? 1.1 : 0.7}
+                      fill="#1d8cf8" opacity={isLatest ? 1 : 0.75} />
+            );
+          })}
         </svg>
       )}
       {videoOk && (
         <p className="absolute bottom-2 left-2 text-xs px-2 py-1 rounded"
            style={{ background: 'rgba(0,0,0,0.6)', color: '#6b7a99' }}>
-          Blue dots = tracked ball
+          Blue dots = tracked ball ({visiblePts.length}/{pts.length})
         </p>
       )}
     </div>
@@ -356,6 +393,7 @@ export default function SessionReportPage() {
   const { session, summary, grid, pitches } = report;
   const zone: ZoneBounds = { top: session.zoneTop!, bottom: session.zoneBottom!, left: session.zoneLeft!, right: session.zoneRight! };
   const maxCell = Math.max(1, ...grid.flat());
+  const gridTotal = grid.flat().reduce((a, b) => a + b, 0);
   const analyzed = pitches.filter((p) => p.frameX !== null);
   const mittCount = pitches.filter((p) => p.impactType?.toLowerCase() === 'mitt').length;
   const batCount = pitches.filter((p) => isBat(p)).length;
@@ -439,20 +477,27 @@ export default function SessionReportPage() {
                   {grid.flatMap((row, r) =>
                     row.map((count, c) => {
                       const inZone = r >= 1 && r <= 3 && c >= 1 && c <= 3;
+                      const pct = gridTotal > 0 ? (count / gridTotal) * 100 : 0;
+                      const t = maxCell > 0 ? count / maxCell : 0;
                       return (
                         <div key={`${r}-${c}`} className="flex items-center justify-center rounded"
                              style={{
                                aspectRatio: '1',
-                               background: count > 0 ? `rgba(29,140,248,${0.15 + (count / maxCell) * 0.55})` : 'rgba(255,255,255,0.02)',
-                               border: inZone ? '1px solid rgba(29,140,248,0.5)' : '1px solid #1a2240',
+                               background: gridHeatColor(t, count > 0 ? 0.9 : 0.35),
+                               border: inZone ? '1.5px solid rgba(255,255,255,0.45)' : '1px solid #1a2240',
                              }}>
-                          <span className="text-xs font-bold" style={{ color: count > 0 ? '#fff' : '#2d3748' }}>{count > 0 ? count : ''}</span>
+                          <span className="text-xs font-bold"
+                                style={{ color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+                            {count > 0 ? `${Math.round(pct)}%` : ''}
+                          </span>
                         </div>
                       );
                     }),
                   )}
                 </div>
-                <p className="text-xs mt-3" style={{ color: '#6b7a99' }}>Inner 3×3 = strike zone. Outer ring = missed.</p>
+                <p className="text-xs mt-3" style={{ color: '#6b7a99' }}>
+                  % of all pitches. Blue = cold, red = hot. Inner 3×3 = strike zone, outer ring = missed.
+                </p>
               </div>
             </div>
           </div>
