@@ -39,19 +39,36 @@ function getClient(): S3Client {
     );
   }
 
-  // Backblaze's region is embedded in the endpoint hostname, e.g.
-  // "s3.us-west-002.backblazeb2.com" -> "us-west-002". The AWS SDK still
-  // wants a region string even for a non-AWS endpoint.
-  const regionMatch = endpoint.match(/s3\.([a-z0-9-]+)\.backblazeb2\.com/i);
+  // Diagnostic — logs the exact values being used (key/secret only as
+  // length + first/last char, never the real value) so a malformed
+  // endpoint or stray whitespace shows up directly in the deploy logs
+  // instead of us guessing blind.
+  console.log('[B2 config]', {
+    endpoint: JSON.stringify(endpoint),           // JSON.stringify reveals hidden whitespace/quotes
+    endpointLength: endpoint.length,
+    bucket: JSON.stringify(process.env.B2_BUCKET_NAME?.trim()),
+    keyIdPreview: keyId ? `${keyId.slice(0, 4)}…${keyId.slice(-4)} (len ${keyId.length})` : 'MISSING',
+    appKeyLength: appKey.length,
+  });
+
+  let validatedEndpoint: string;
+  try {
+    validatedEndpoint = new URL(endpoint).toString().replace(/\/$/, '');
+  } catch (e) {
+    throw new Error(
+      `B2_ENDPOINT is not a valid URL: ${JSON.stringify(endpoint)}. It must look like ` +
+      `"https://s3.us-west-002.backblazeb2.com" (no trailing slash, no quotes, no extra spaces). ` +
+      `Underlying error: ${e instanceof Error ? e.message : String(e)}`
+    );
+  }
+
+  const regionMatch = validatedEndpoint.match(/s3\.([a-z0-9-]+)\.backblazeb2\.com/i);
   const region = regionMatch ? regionMatch[1] : 'us-east-1';
+  console.log('[B2 config] resolved', { validatedEndpoint, region });
 
   client = new S3Client({
-    endpoint,
+    endpoint: validatedEndpoint,
     region,
-    // Backblaze (like most S3-compatible providers) requires path-style
-    // addressing (endpoint/bucket/key). The AWS SDK defaults to
-    // virtual-hosted-style (bucket.endpoint/key) unless told otherwise,
-    // which was almost certainly producing the "Invalid URL" error.
     forcePathStyle: true,
     credentials: { accessKeyId: keyId, secretAccessKey: appKey },
   });
@@ -69,12 +86,25 @@ export async function uploadVideoToStorage(localPath: string, key: string): Prom
   const s3 = getClient();
   const body = await readFile(localPath);
 
-  await s3.send(new PutObjectCommand({
-    Bucket: bucket,
-    Key: key,
-    Body: body,
-    ContentType: key.endsWith('.mov') ? 'video/quicktime' : 'video/mp4',
-  }));
+  console.log('[B2 upload] attempting', { bucket, key, bytes: body.length });
+
+  try {
+    await s3.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: body,
+      ContentType: key.endsWith('.mov') ? 'video/quicktime' : 'video/mp4',
+    }));
+  } catch (e) {
+    console.log('[B2 upload] PutObjectCommand failed', {
+      message: e instanceof Error ? e.message : String(e),
+      name: e instanceof Error ? e.name : undefined,
+      stack: e instanceof Error ? e.stack : undefined,
+    });
+    throw e;
+  }
+
+  console.log('[B2 upload] success', { bucket, key });
 
   // Public bucket URL format: {endpoint}/{bucket}/{key}
   return `${endpoint}/${bucket}/${key}`;
