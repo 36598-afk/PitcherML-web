@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSession, signOut } from '@/lib/auth/auth-client';
-import { Plus, User, ChevronRight, X, Loader2, TrendingUp, Calendar, Target } from 'lucide-react';
+import { Plus, User, ChevronRight, X, Loader2, Calendar, Target } from 'lucide-react';
 import { players as playersContent } from 'virtual:content';
 
 const INPUT_STYLE: CSSProperties = { background: '#0a0d14', border: '1px solid #1a2240', color: '#e8eaf0', fontFamily: 'var(--font-sans)' };
@@ -27,8 +27,6 @@ interface PlayerDetail {
   careerStats: {
     totalSessions: number;
     totalPitches: number;
-    avgVelocity: string | null;
-    maxVelocity: string | null;
   };
 }
 
@@ -36,11 +34,10 @@ interface Session {
   id: number;
   sessionDate: string;
   label: string | null;
+  status: string;
   totalPitches: number;
   strikes: number;
   balls: number;
-  avgVelocity: number | null;
-  maxVelocity: number | null;
   notes: string | null;
 }
 
@@ -343,8 +340,6 @@ function PlayerDetailPanel({ playerId, onClose }: { playerId: number; onClose: (
             <div className="grid grid-cols-2 gap-3">
               {statCard(playersContent.detail.statSessions, data.careerStats.totalSessions)}
               {statCard(playersContent.detail.statTotalPitches, data.careerStats.totalPitches)}
-              {statCard(playersContent.detail.statAvgVelocity, data.careerStats.avgVelocity ? Number(data.careerStats.avgVelocity).toFixed(1) : null, 'mph')}
-              {statCard(playersContent.detail.statMaxVelocity, data.careerStats.maxVelocity ? Number(data.careerStats.maxVelocity).toFixed(1) : null, 'mph')}
             </div>
           </div>
 
@@ -369,122 +364,68 @@ function PlayerDetailPanel({ playerId, onClose }: { playerId: number; onClose: (
             ) : (
               <div className="flex flex-col gap-2">
                 {data.sessions.map((s) => (
-                  <div
+                  <Link
                     key={s.id}
-                    className="rounded-lg p-4"
+                    to={
+                      s.status === 'ended' ? `/session/${s.id}/report`
+                        : s.status === 'calibrating' ? `/session/${s.id}/calibrate`
+                        : `/session/${s.id}`
+                    }
+                    className="block rounded-lg p-4 transition-colors"
                     style={{ background: '#0a0d14', border: '1px solid #1a2240' }}
+                    onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(29,140,248,0.4)'}
+                    onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.borderColor = '#1a2240'}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>
-                          {s.label || formatDate(s.sessionDate)}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>
+                            {s.label || formatDate(s.sessionDate)}
+                          </p>
+                          {s.status !== 'ended' && (
+                            <span
+                              className="text-xs px-1.5 py-0.5 rounded font-semibold"
+                              style={{
+                                background: s.status === 'calibrating' ? 'rgba(234,179,8,0.15)' : 'rgba(34,197,94,0.15)',
+                                color: s.status === 'calibrating' ? '#eab308' : '#22c55e',
+                              }}
+                            >
+                              {s.status === 'calibrating' ? 'Needs setup' : 'In progress'}
+                            </span>
+                          )}
+                        </div>
                         {s.label && (
                           <p className="text-xs mt-0.5" style={{ color: '#6b7a99' }}>{formatDate(s.sessionDate)}</p>
                         )}
                       </div>
-                      <div className="flex gap-3 text-right flex-shrink-0">
-                        <div>
-                          <p className="text-xs" style={{ color: '#6b7a99' }}>{playersContent.detail.statPitches}</p>
-                          <p className="text-sm font-bold" style={{ color: '#e8eaf0' }}>{s.totalPitches}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs" style={{ color: '#6b7a99' }}>Strike%</p>
-                          <p className="text-sm font-bold" style={{ color: '#22c55e' }}>{strikeRate(s.strikes, s.totalPitches)}</p>
-                        </div>
-                        {s.avgVelocity && (
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="flex gap-3 text-right">
                           <div>
-                            <p className="text-xs" style={{ color: '#6b7a99' }}>{playersContent.detail.statAvgVelo}</p>
-                            <p className="text-sm font-bold" style={{ color: '#1d8cf8' }}>{s.avgVelocity.toFixed(1)}</p>
+                            <p className="text-xs" style={{ color: '#6b7a99' }}>{playersContent.detail.statPitches}</p>
+                            <p className="text-sm font-bold" style={{ color: '#e8eaf0' }}>{s.totalPitches}</p>
                           </div>
-                        )}
+                          <div>
+                            <p className="text-xs" style={{ color: '#6b7a99' }}>Strike%</p>
+                            <p className="text-sm font-bold" style={{ color: '#22c55e' }}>{strikeRate(s.strikes, s.totalPitches)}</p>
+                          </div>
+                        </div>
+                        <ChevronRight size={14} style={{ color: '#3a4460' }} />
                       </div>
                     </div>
                     {s.notes && (
                       <p className="mt-2 text-xs" style={{ color: '#6b7a99' }}>{s.notes}</p>
                     )}
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
           </div>
-
-          {/* Trend placeholder */}
-          {data.sessions.length > 1 && (
-            <div
-              className="rounded-lg p-4"
-              style={{ background: '#0a0d14', border: '1px solid #1a2240' }}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp size={14} style={{ color: '#1d8cf8' }} />
-                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#6b7a99' }}>
-                  {playersContent.detail.velocityTrendHeading}
-                </span>
-              </div>
-              <VelocitySparkline sessions={data.sessions} />
-            </div>
-          )}
         </div>
       )}
     </motion.div>
   );
 }
 
-// ─── Velocity Sparkline ───────────────────────────────────────────────────────
-
-function VelocitySparkline({ sessions }: { sessions: Session[] }) {
-  const withVelo = [...sessions].reverse().filter((s) => s.avgVelocity !== null);
-  if (withVelo.length < 2) {
-    return <p className="text-xs" style={{ color: '#6b7a99' }}>{playersContent.detail.notEnoughVeloData}</p>;
-  }
-
-  const values = withVelo.map((s) => s.avgVelocity as number);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const w = 300;
-  const h = 60;
-
-  const coords = values.map((v, i) => ({
-    x: (i / (values.length - 1)) * w,
-    y: h - ((v - min) / range) * (h - 8) - 4,
-  }));
-
-  const d = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
-  const fill = `${d} L ${w} ${h} L 0 ${h} Z`;
-
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: '60px' }}>
-      <defs>
-        <linearGradient id="veloGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1d8cf8" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#1d8cf8" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <motion.path
-        d={fill}
-        fill="url(#veloGrad)"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-      />
-      <motion.path
-        d={d}
-        stroke="#1d8cf8"
-        strokeWidth="2"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1, ease: 'easeOut' as const }}
-      />
-      {coords.map((c, i) => (
-        <circle key={i} cx={c.x} cy={c.y} r={3} fill="#1d8cf8" />
-      ))}
-    </svg>
-  );
-}
 
 // ─── Player Card ──────────────────────────────────────────────────────────────
 

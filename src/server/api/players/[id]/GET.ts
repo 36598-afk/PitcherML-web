@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { db } from '../../../db/client.js';
-import { players, pitchSessions, pitches } from '../../../db/schema.js';
-import { eq, desc, avg, max, count, and } from 'drizzle-orm';
+import { players, pitchSessions, pitchVideoAnalyses } from '../../../db/schema.js';
+import { eq, desc, count, and } from 'drizzle-orm';
 import { getAuth } from '../../../../lib/auth/auth.js';
 
 export default async function handler(req: Request, res: Response) {
@@ -28,16 +28,16 @@ export default async function handler(req: Request, res: Response) {
       .where(eq(pitchSessions.playerId, playerId))
       .orderBy(desc(pitchSessions.sessionDate));
 
-    // Aggregate career stats
+    // Career stats — counts real pitch data from pitchVideoAnalyses (every
+    // uploaded clip, regardless of session status), NOT the old unused
+    // `pitches` table, which nothing in the real pipeline ever writes to.
     const [careerStats] = await db
       .select({
         totalSessions: count(pitchSessions.id),
-        totalPitches: count(pitches.id),
-        avgVelocity: avg(pitches.velocity),
-        maxVelocity: max(pitches.velocity),
+        totalPitches: count(pitchVideoAnalyses.id),
       })
       .from(pitchSessions)
-      .leftJoin(pitches, eq(pitches.sessionId, pitchSessions.id))
+      .leftJoin(pitchVideoAnalyses, eq(pitchVideoAnalyses.sessionId, pitchSessions.id))
       .where(eq(pitchSessions.playerId, playerId));
 
     res.json({ player, sessions, careerStats });

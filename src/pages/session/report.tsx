@@ -204,6 +204,107 @@ function gridHeatColor(t: number, alpha: number): string {
   return `rgba(${r},${g},${bl},${alpha})`;
 }
 
+/** Buckets a zone-relative point into the 5x5 grid - same logic as the
+ *  backend's bucket() in report/GET.ts, needed here so we can compute
+ *  separate grids for mitt-only and bat-only subsets client-side. */
+function bucketPoint(zx: number, zy: number): { row: number; col: number } {
+  const idx = (v: number) => {
+    if (v < 0) return 0;
+    if (v >= 1) return 4;
+    return 1 + Math.min(2, Math.floor(v * 3));
+  };
+  return { row: idx(zy), col: idx(zx) };
+}
+
+function computeGrid(pitches: Pitch[]): number[][] {
+  const grid: number[][] = Array.from({ length: 5 }, () => [0, 0, 0, 0, 0]);
+  for (const p of pitches) {
+    if (p.zoneX === null || p.zoneY === null) continue;
+    const { row, col } = bucketPoint(p.zoneX, p.zoneY);
+    grid[row][col]++;
+  }
+  return grid;
+}
+
+function StatsTrio({
+  pitches, zone, title, showLegend, highlight,
+}: {
+  pitches: Pitch[]; zone: ZoneBounds; title: string; showLegend: boolean; highlight?: Pitch | null;
+}) {
+  const grid = computeGrid(pitches);
+  const maxCell = Math.max(1, ...grid.flat());
+  const gridTotal = grid.flat().reduce((a, b) => a + b, 0);
+
+  return (
+    <div className="mb-8">
+      <h3 className="text-sm font-bold uppercase tracking-wider mb-3" style={{ color: '#6b7a99' }}>{title}</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="rounded-xl overflow-hidden" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
+          <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #1a2240' }}>
+            <Target size={14} style={{ color: '#1d8cf8' }} />
+            <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Pitch Locations</p>
+          </div>
+          <div className="p-4">
+            <LocationPlot pitches={pitches} zone={zone} highlight={highlight} />
+            {showLegend && (
+              <div className="flex items-center gap-3 mt-3 text-xs flex-wrap" style={{ color: '#6b7a99' }}>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#22c55e' }} /> Strike</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#ef4444' }} /> Ball</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#f97316' }} /> Contact</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-xl overflow-hidden" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
+          <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #1a2240' }}>
+            <Flame size={14} style={{ color: '#ef4444' }} />
+            <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Heat Map</p>
+          </div>
+          <div className="p-4">
+            <DensityHeatmap pitches={pitches} zone={zone} />
+            <p className="text-xs mt-3" style={{ color: '#6b7a99' }}>Brighter = more pitches landed there.</p>
+          </div>
+        </div>
+
+        <div className="rounded-xl overflow-hidden" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
+          <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #1a2240' }}>
+            <Grid3x3 size={14} style={{ color: '#1d8cf8' }} />
+            <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Zone Breakdown</p>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-5 gap-1">
+              {grid.flatMap((row, r) =>
+                row.map((count, c) => {
+                  const inZone = r >= 1 && r <= 3 && c >= 1 && c <= 3;
+                  const pct = gridTotal > 0 ? (count / gridTotal) * 100 : 0;
+                  const t = maxCell > 0 ? count / maxCell : 0;
+                  return (
+                    <div key={`${r}-${c}`} className="flex items-center justify-center rounded"
+                         style={{
+                           aspectRatio: '1',
+                           background: gridHeatColor(t, count > 0 ? 0.9 : 0.35),
+                           border: inZone ? '1.5px solid rgba(255,255,255,0.45)' : '1px solid #1a2240',
+                         }}>
+                      <span className="text-xs font-bold"
+                            style={{ color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+                        {count > 0 ? `${Math.round(pct)}%` : ''}
+                      </span>
+                    </div>
+                  );
+                }),
+              )}
+            </div>
+            <p className="text-xs mt-3" style={{ color: '#6b7a99' }}>
+              % of these pitches. Inner 3×3 = strike zone, outer ring = missed.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** blue (cold) -> cyan -> yellow -> red (hot), broadcast-style gradient */
 function heatRGBA(t: number): [number, number, number, number] {
   if (t <= 0) return [0, 0, 0, 0];
@@ -390,13 +491,14 @@ export default function SessionReportPage() {
     );
   }
 
-  const { session, summary, grid, pitches } = report;
+  const { session, summary, pitches } = report;
   const zone: ZoneBounds = { top: session.zoneTop!, bottom: session.zoneBottom!, left: session.zoneLeft!, right: session.zoneRight! };
-  const maxCell = Math.max(1, ...grid.flat());
-  const gridTotal = grid.flat().reduce((a, b) => a + b, 0);
   const analyzed = pitches.filter((p) => p.frameX !== null);
+  const mittPitches = analyzed.filter((p) => !isBat(p));
+  const batPitches = analyzed.filter((p) => isBat(p));
   const mittCount = pitches.filter((p) => p.impactType?.toLowerCase() === 'mitt').length;
   const batCount = pitches.filter((p) => isBat(p)).length;
+  const showSplit = mittCount > 0 && batCount > 0;
 
   return (
     <>
@@ -435,72 +537,32 @@ export default function SessionReportPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
-            {/* Locations */}
-            <div className="rounded-xl overflow-hidden" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
-              <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #1a2240' }}>
-                <Target size={14} style={{ color: '#1d8cf8' }} />
-                <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Pitch Locations</p>
-              </div>
-              <div className="p-4">
-                <LocationPlot pitches={analyzed} zone={zone} highlight={selected} />
-                <div className="flex items-center gap-3 mt-3 text-xs flex-wrap" style={{ color: '#6b7a99' }}>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#22c55e' }} /> Strike</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#ef4444' }} /> Ball</span>
-                  {batCount > 0 && (
-                    <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#f97316' }} /> Contact</span>
-                  )}
-                </div>
-              </div>
-            </div>
+          <StatsTrio
+            pitches={analyzed}
+            zone={zone}
+            title={showSplit ? 'All Pitches (Overlay)' : 'Pitch Locations'}
+            showLegend
+            highlight={selected}
+          />
 
-            {/* Heat map */}
-            <div className="rounded-xl overflow-hidden" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
-              <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #1a2240' }}>
-                <Flame size={14} style={{ color: '#ef4444' }} />
-                <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Heat Map</p>
-              </div>
-              <div className="p-4">
-                <DensityHeatmap pitches={analyzed} zone={zone} />
-                <p className="text-xs mt-3" style={{ color: '#6b7a99' }}>Brighter = more pitches landed there.</p>
-              </div>
-            </div>
-
-            {/* 5x5 zone breakdown */}
-            <div className="rounded-xl overflow-hidden" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
-              <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #1a2240' }}>
-                <Grid3x3 size={14} style={{ color: '#1d8cf8' }} />
-                <p className="text-sm font-semibold" style={{ color: '#e8eaf0' }}>Zone Breakdown</p>
-              </div>
-              <div className="p-4">
-                <div className="grid grid-cols-5 gap-1">
-                  {grid.flatMap((row, r) =>
-                    row.map((count, c) => {
-                      const inZone = r >= 1 && r <= 3 && c >= 1 && c <= 3;
-                      const pct = gridTotal > 0 ? (count / gridTotal) * 100 : 0;
-                      const t = maxCell > 0 ? count / maxCell : 0;
-                      return (
-                        <div key={`${r}-${c}`} className="flex items-center justify-center rounded"
-                             style={{
-                               aspectRatio: '1',
-                               background: gridHeatColor(t, count > 0 ? 0.9 : 0.35),
-                               border: inZone ? '1.5px solid rgba(255,255,255,0.45)' : '1px solid #1a2240',
-                             }}>
-                          <span className="text-xs font-bold"
-                                style={{ color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
-                            {count > 0 ? `${Math.round(pct)}%` : ''}
-                          </span>
-                        </div>
-                      );
-                    }),
-                  )}
-                </div>
-                <p className="text-xs mt-3" style={{ color: '#6b7a99' }}>
-                  % of all pitches. Blue = cold, red = hot. Inner 3×3 = strike zone, outer ring = missed.
-                </p>
-              </div>
-            </div>
-          </div>
+          {showSplit && (
+            <>
+              <StatsTrio
+                pitches={mittPitches}
+                zone={zone}
+                title="Pitcher (Mitt)"
+                showLegend={false}
+                highlight={selected}
+              />
+              <StatsTrio
+                pitches={batPitches}
+                zone={zone}
+                title="Batter (Contact)"
+                showLegend={false}
+                highlight={selected}
+              />
+            </>
+          )}
 
           <h2 className="text-lg font-black mb-3" style={{ fontFamily: 'var(--font-heading)', color: '#e8eaf0' }}>
             Pitch by Pitch
