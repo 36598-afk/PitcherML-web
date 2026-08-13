@@ -63,8 +63,7 @@ export function getAuth() {
       },
     },
 
-    // CORS: Trusts .airoapp.ai subdomains and localhost by default.
-    // If your app has a custom domain, add it here or set BETTER_AUTH_TRUSTED_ORIGINS.
+    // CORS: Trusts .airoapp.ai subdomains, localhost, and the custom domain.
     trustedOrigins: (request?: Request) => {
       if (!request) return [];
 
@@ -82,6 +81,14 @@ export function getAuth() {
 
         // Trust localhost for development
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
+          return [origin];
+        }
+
+        // Trust the custom domain (both root and www) — added when
+        // pitcherml.com was connected via Railway. Sign-in was failing
+        // with "Invalid origin" because requests from the new domain
+        // weren't recognized here yet.
+        if (hostname === 'pitcherml.com' || hostname === 'www.pitcherml.com') {
           return [origin];
         }
 
