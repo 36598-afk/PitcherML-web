@@ -380,11 +380,43 @@ function PitchTrace({ pitch, zone }: { pitch: Pitch; zone: ZoneBounds }) {
   );
 }
 
+/** Converts a sequence of points into a smooth cubic-bezier SVG path that
+ *  passes exactly through every point (Catmull-Rom spline, standard
+ *  uniform-parametrization conversion to bezier segments). This is what
+ *  gives the trace an arc-like look for a real ball flight, while still
+ *  hugging whatever the actual detections show if the shape isn't a
+ *  perfect parabola -- it interpolates the real data, it doesn't impose
+ *  an idealized curve on top of it. */
+function smoothPath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return '';
+  if (pts.length === 2) return `M ${pts[0].x},${pts[0].y} L ${pts[1].x},${pts[1].y}`;
+  const d: string[] = [`M ${pts[0].x},${pts[0].y}`];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d.push(`C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`);
+  }
+  return d.join(' ');
+}
+
 /** Video with the ball-detection trail revealed progressively, in sync with
  *  actual playback — a dot appears exactly when the video reaches the
  *  moment that detection happened, not all at once regardless of where
  *  playback is. Falls back to a reasonable default fps for pitches
- *  analyzed before this field started being saved. */
+ *  analyzed before this field started being saved.
+ *
+ *  Position tracking uses requestAnimationFrame polling of the video's
+ *  own currentTime, not the `timeupdate` event — browsers only fire
+ *  `timeupdate` a few times a second (commonly throttled to ~250ms
+ *  intervals), which is a large, visible lag for a pitch that's on
+ *  screen for well under a second. Polling every animation frame keeps
+ *  the trace's head matched to the actual ball position. */
 function VideoTrace({ pitch }: { pitch: Pitch }) {
   const pts = pitch.flightPath ?? [];
   const fps = pitch.fps ?? 30;
@@ -392,8 +424,21 @@ function VideoTrace({ pitch }: { pitch: Pitch }) {
   const [currentTime, setCurrentTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  useEffect(() => {
+    let raf: number;
+    const tick = () => {
+      const v = videoRef.current;
+      if (v) setCurrentTime(v.currentTime);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   // Only reveal points whose frame has actually been reached by playback.
   const visiblePts = pts.filter((p) => p.frame / fps <= currentTime);
+  const svgPts = visiblePts.map((p) => ({ x: p.x * 100, y: p.y * 100 }));
+  const curveD = smoothPath(svgPts);
 
   return (
     <div className="relative inline-block mx-auto" style={{ lineHeight: 0, maxWidth: '100%' }}>
@@ -405,8 +450,6 @@ function VideoTrace({ pitch }: { pitch: Pitch }) {
           preload="metadata"
           style={{ display: 'block', maxHeight: 420, maxWidth: '100%', background: '#000' }}
           onError={() => setVideoOk(false)}
-          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-          onSeeking={(e) => setCurrentTime(e.currentTarget.currentTime)}
         />
       ) : (
         <div className="flex flex-col items-center justify-center gap-2 py-10" style={{ background: '#000' }}>
@@ -417,15 +460,27 @@ function VideoTrace({ pitch }: { pitch: Pitch }) {
       {videoOk && (
         <svg viewBox="0 0 100 100" preserveAspectRatio="none"
              className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%' }}>
-          {visiblePts.length > 1 && (
-            <polyline points={visiblePts.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')}
-                      fill="none" stroke="#1d8cf8" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
+          {curveD && (
+            <>
+              {/* soft glow: a wider, blurred, translucent duplicate of the
+                  curve sitting behind the crisp one — cheap broadcast-style
+                  glow without relying on filter primitives */}
+              <path d={curveD} fill="none" stroke="#1d8cf8" strokeWidth={2.4}
+                    strokeLinecap="round" strokeLinejoin="round"
+                    opacity={0.35} vectorEffect="non-scaling-stroke" />
+              <path d={curveD} fill="none" stroke="#4fa8ff" strokeWidth={0.55}
+                    strokeLinecap="round" strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke" />
+            </>
           )}
-          {visiblePts.map((p, i) => {
-            const isLatest = i === visiblePts.length - 1;
+          {svgPts.map((p, i) => {
+            const isLatest = i === svgPts.length - 1;
+            if (!isLatest && i % 3 !== 0) return null; // thin out mid-trail markers so the curve itself reads clearly
             return (
-              <circle key={i} cx={p.x * 100} cy={p.y * 100} r={isLatest ? 1.1 : 0.7}
-                      fill="#1d8cf8" opacity={isLatest ? 1 : 0.75} />
+              <circle key={i} cx={p.x} cy={p.y} r={isLatest ? 1.3 : 0.55}
+                      fill={isLatest ? '#fff' : '#1d8cf8'}
+                      stroke={isLatest ? '#1d8cf8' : 'none'} strokeWidth={isLatest ? 0.4 : 0}
+                      opacity={isLatest ? 1 : 0.7} />
             );
           })}
         </svg>
