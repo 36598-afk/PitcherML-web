@@ -614,6 +614,11 @@ function VideoTrace({ pitch }: { pitch: Pitch }) {
   const svgPts = visiblePts.map((p) => ({ x: p.x * 100, y: p.y * 100 }));
   const curveD = smoothPath(svgPts);
 
+  const impactPt = pitch.frameX !== null && pitch.frameY !== null
+    ? { x: pitch.frameX * 100, y: pitch.frameY * 100 }
+    : null;
+  const isImpactVisible = pitch.impactFrame !== null && pitch.impactFrame / fps <= currentTime;
+
   return (
     <div className="relative inline-block mx-auto" style={{ lineHeight: 0, maxWidth: '100%' }}>
       {videoOk ? (
@@ -646,6 +651,18 @@ function VideoTrace({ pitch }: { pitch: Pitch }) {
                     strokeLinecap="round" strokeLinejoin="round"
                     vectorEffect="non-scaling-stroke" />
             </>
+          )}
+          {isImpactVisible && impactPt && (
+            <g>
+              <circle cx={impactPt.x} cy={impactPt.y} r={3.2} fill="#dc2626" opacity={0.3} />
+              <circle cx={impactPt.x} cy={impactPt.y} r={1.8} fill="#dc2626" stroke="#fff" strokeWidth={0.35} />
+              <text x={impactPt.x} y={impactPt.y - 4.5} textAnchor="middle"
+                    fontSize={3.4} fontWeight={800} fill="#fff"
+                    stroke="#000" strokeWidth={0.6} paintOrder="stroke"
+                    style={{ fontFamily: 'var(--font-heading, sans-serif)' }}>
+                IMPACT
+              </text>
+            </g>
           )}
         </svg>
       )}
