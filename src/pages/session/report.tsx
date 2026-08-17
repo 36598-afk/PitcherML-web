@@ -3,7 +3,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useSession } from '@/lib/auth/auth-client';
-import { Loader2, AlertCircle, ChevronRight, Target, Grid3x3, Flame, Play, LayoutGrid } from 'lucide-react';
+import { Loader2, AlertCircle, ChevronRight, Target, Grid3x3, Flame, Play, LayoutGrid, Pencil, Check, Trash2, X, Loader } from 'lucide-react';
 
 /**
  * End-of-session report.
@@ -327,11 +327,25 @@ function heatRGBA(t: number): [number, number, number, number] {
   ];
 }
 
-// ─── Single pitch: traced path, two views ─────────────────────────────────────
+// ─── Single pitch: traced path, three views (zone plot / video / edit) ───────
 
-function PitchTrace({ pitch, zone }: { pitch: Pitch; zone: ZoneBounds }) {
+function PitchTrace({ pitch, zone, onUpdated }: { pitch: Pitch; zone: ZoneBounds; onUpdated: () => void }) {
   const [view, setView] = useState<'plane' | 'video'>('plane');
+  const [editing, setEditing] = useState(false);
   const pts = pitch.flightPath ?? [];
+
+  if (editing) {
+    return (
+      <EditPitchPanel
+        pitch={pitch}
+        zone={zone}
+        onDone={(saved) => {
+          setEditing(false);
+          if (saved) onUpdated();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="rounded-lg overflow-hidden" style={{ background: '#0a0d14', border: '1px solid #1a2240' }}>
@@ -351,6 +365,20 @@ function PitchTrace({ pitch, zone }: { pitch: Pitch; zone: ZoneBounds }) {
           <Play size={11} /> Video
         </button>
         <span className="ml-auto text-xs" style={{ color: '#3a4460' }}>{pts.length} detections</span>
+        <button
+          onClick={() => setEditing(true)}
+          disabled={pts.length === 0}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold"
+          style={{
+            background: 'rgba(239,68,68,0.1)',
+            color: pts.length === 0 ? '#3a4460' : '#ef4444',
+            border: '1px solid rgba(239,68,68,0.25)',
+            opacity: pts.length === 0 ? 0.5 : 1,
+            cursor: pts.length === 0 ? 'default' : 'pointer',
+          }}
+        >
+          <Pencil size={11} /> Edit Pitch
+        </button>
       </div>
 
       {view === 'plane' ? (
@@ -376,6 +404,152 @@ function PitchTrace({ pitch, zone }: { pitch: Pitch; zone: ZoneBounds }) {
       ) : (
         <VideoTrace pitch={pitch} />
       )}
+    </div>
+  );
+}
+
+/** Manual detection review: walks backward from the LAST detection (the
+ *  current impact point), one at a time. Keep advances to the previous
+ *  point unchanged; Delete removes the current point from the working
+ *  path and advances to the previous one. Because this is a plain array
+ *  filter, deleting a point in the middle naturally reconnects its
+ *  neighbors directly -- nothing special needed for that, the polyline
+ *  and saved path just skip over whatever's been removed.
+ *
+ *  Nothing is persisted until Save -- Cancel (or navigating away) at any
+ *  point discards the working copy and leaves the stored path untouched. */
+function EditPitchPanel({ pitch, zone, onDone }: { pitch: Pitch; zone: ZoneBounds; onDone: (saved: boolean) => void }) {
+  const [working, setWorking] = useState<PathPoint[]>(() => [...(pitch.flightPath ?? [])].sort((a, b) => a.frame - b.frame));
+  const [cursor, setCursor] = useState(working.length - 1);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const reviewing = cursor >= 0 && cursor < working.length;
+  const current = reviewing ? working[cursor] : null;
+
+  function keep() {
+    setCursor((c) => c - 1);
+  }
+
+  function del() {
+    setWorking((w) => w.filter((_, i) => i !== cursor));
+    setCursor((c) => c - 1);
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/video-analyses/${pitch.id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flightPath: working }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      onDone(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save');
+      setSaving(false);
+    }
+  }
+
+  const removedCount = (pitch.flightPath?.length ?? 0) - working.length;
+
+  return (
+    <div className="rounded-lg overflow-hidden" style={{ background: '#0a0d14', border: '1px solid rgba(239,68,68,0.3)' }}>
+      <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: '1px solid #1a2240' }}>
+        <Pencil size={12} style={{ color: '#ef4444' }} />
+        <span className="text-xs font-semibold" style={{ color: '#ef4444' }}>Editing detections</span>
+        <span className="ml-auto text-xs" style={{ color: '#3a4460' }}>
+          {reviewing ? `reviewing ${cursor + 1} / ${working.length}` : 'review complete'}
+          {removedCount > 0 && ` · ${removedCount} removed`}
+        </span>
+      </div>
+
+      <svg viewBox="0 0 100 100" width="100%" style={{ display: 'block' }}>
+        <ZoneBox zone={zone} />
+        {working.length > 1 && (
+          <polyline points={working.map((p) => `${px(p.x)},${py(p.y)}`).join(' ')}
+                    fill="none" stroke="#1d8cf8" strokeWidth={0.6} strokeLinecap="round" strokeLinejoin="round" />
+        )}
+        {working.map((p, i) => {
+          const isCurrent = i === cursor;
+          const isPending = i < cursor; // not yet reached walking backward from the end
+          return (
+            <circle key={`${p.frame}-${i}`} cx={px(p.x)} cy={py(p.y)}
+                    r={isCurrent ? 2.2 : 0.8}
+                    fill={isCurrent ? '#eab308' : isPending ? '#3a4460' : '#1d8cf8'}
+                    stroke={isCurrent ? '#fff' : 'none'} strokeWidth={isCurrent ? 0.4 : 0} />
+          );
+        })}
+      </svg>
+
+      <div className="p-3 flex flex-col gap-3">
+        {reviewing && current && (
+          <>
+            <p className="text-xs text-center" style={{ color: '#6b7a99' }}>
+              Frame {current.frame}{current.conf != null && ` · ${(current.conf * 100).toFixed(0)}% confidence`}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={del}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-sm font-semibold"
+                style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
+              >
+                <Trash2 size={13} /> Delete
+              </button>
+              <button
+                onClick={keep}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-sm font-semibold"
+                style={{ background: 'rgba(34,197,94,0.12)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }}
+              >
+                <Check size={13} /> Keep
+              </button>
+            </div>
+          </>
+        )}
+
+        {!reviewing && (
+          <>
+            <p className="text-xs text-center" style={{ color: '#6b7a99' }}>
+              {working.length > 0
+                ? `Reviewed all detections. ${working.length} kept, ${removedCount} removed.`
+                : 'All detections removed — this pitch will have no impact point.'}
+            </p>
+            {error && <p className="text-xs text-center" style={{ color: '#f87171' }}>{error}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={() => onDone(false)}
+                disabled={saving}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-sm font-semibold"
+                style={{ background: 'transparent', color: '#6b7a99', border: '1px solid #1a2240' }}
+              >
+                <X size={13} /> Cancel
+              </button>
+              <button
+                onClick={save}
+                disabled={saving}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-sm font-semibold"
+                style={{ background: '#1d8cf8', color: '#fff', opacity: saving ? 0.7 : 1 }}
+              >
+                {saving ? <Loader size={13} className="animate-spin" /> : <Check size={13} />}
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </>
+        )}
+
+        {reviewing && (
+          <button
+            onClick={() => onDone(false)}
+            className="text-xs self-center"
+            style={{ color: '#3a4460' }}
+          >
+            Cancel editing
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -465,10 +639,10 @@ function VideoTrace({ pitch }: { pitch: Pitch }) {
               {/* soft glow: a wider, blurred, translucent duplicate of the
                   curve sitting behind the crisp one — cheap broadcast-style
                   glow without relying on filter primitives */}
-              <path d={curveD} fill="none" stroke="#eab308" strokeWidth={2.4}
+              <path d={curveD} fill="none" stroke="#dc2626" strokeWidth={2.4}
                     strokeLinecap="round" strokeLinejoin="round"
                     opacity={0.35} vectorEffect="non-scaling-stroke" />
-              <path d={curveD} fill="none" stroke="#fde047" strokeWidth={0.55}
+              <path d={curveD} fill="none" stroke="#f87171" strokeWidth={0.55}
                     strokeLinecap="round" strokeLinejoin="round"
                     vectorEffect="non-scaling-stroke" />
             </>
@@ -478,7 +652,7 @@ function VideoTrace({ pitch }: { pitch: Pitch }) {
       {videoOk && (
         <p className="absolute bottom-2 left-2 text-xs px-2 py-1 rounded"
            style={{ background: 'rgba(0,0,0,0.6)', color: '#6b7a99' }}>
-          Yellow trace = tracked ball ({visiblePts.length}/{pts.length})
+          Red trace = tracked ball ({visiblePts.length}/{pts.length})
         </p>
       )}
     </div>
@@ -495,12 +669,18 @@ export default function SessionReportPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Pitch | null>(null);
 
-  useEffect(() => {
-    if (isPending || !sessionId) return;
-    fetch(`/api/sessions/${sessionId}/report`, { credentials: 'include' })
+  function fetchReport() {
+    if (!sessionId) return;
+    return fetch(`/api/sessions/${sessionId}/report`, { credentials: 'include' })
       .then(async (r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then((data: Report) => { setReport(data); setLoading(false); })
       .catch((e: Error) => { setError(e.message); setLoading(false); });
+  }
+
+  useEffect(() => {
+    if (isPending || !sessionId) return;
+    fetchReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, isPending]);
 
   if (isPending || loading) {
@@ -635,7 +815,7 @@ export default function SessionReportPage() {
                 </div>
                 {p.status === 'done' && (
                   <div className="p-4">
-                    <PitchTrace pitch={p} zone={zone} />
+                    <PitchTrace pitch={p} zone={zone} onUpdated={fetchReport} />
                   </div>
                 )}
               </div>
