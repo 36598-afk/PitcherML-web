@@ -109,3 +109,64 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* ── Landing page visual utilities (ported from the Signal design, tinted
+   to PitcherML's own blue accent instead of cyan) ────────────────────── */
+
+/* Glass card: a soft translucent surface with a gradient hairline border
+   and inset top highlight, instead of a flat solid fill + plain border. */
+.pml-glass {
+  position: relative;
+  background: rgba(255, 255, 255, 0.015);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+.pml-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(29, 140, 248, 0.5) 0%,
+    rgba(29, 140, 248, 0.14) 22%,
+    rgba(255, 255, 255, 0) 42%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(29, 140, 248, 0.14) 80%,
+    rgba(29, 140, 248, 0.5) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Spotlight glow that follows in on hover -- a cheap approximation of a
+   cursor-tracked highlight using a fixed radial gradient at the top. */
+.pml-spot {
+  position: relative;
+  overflow: hidden;
+}
+.pml-spot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  background: radial-gradient(340px circle at 50% 0%, rgba(29, 140, 248, 0.14), transparent 65%);
+  pointer-events: none;
+}
+.pml-spot:hover::after {
+  opacity: 1;
+}
+
+/* Snappy button pop, matching the reference's hover feel. */
+.pml-btn-pop {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pml-btn-pop:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 34px -8px rgba(29, 140, 248, 0.55);
+}

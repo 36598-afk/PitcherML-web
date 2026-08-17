@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Header from '@/layouts/parts/Header';
 import Footer from '@/layouts/parts/Footer';
+import Silk from '@/components/brand/Silk';
 
 /**
  * The entire site is sign-in -> tool, so this decides which of those two
@@ -32,16 +33,16 @@ export default function RootPage() {
   return <Landing />;
 }
 
-// ─── Reveal-on-scroll wrapper, matching the pattern already used in the report page ──
+// ─── Reveal-on-scroll: more dramatic than a plain fade -- scale + rise ────────
 
 function Reveal({ children, delay = 0, className }: { children: React.ReactNode; delay?: number; className?: string }) {
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.5, delay, ease: 'easeOut' }}
+      initial={{ opacity: 0, y: 28, scale: 0.97 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
     </motion.div>
@@ -57,14 +58,25 @@ function SectionKicker({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Cheap grain texture, fixed over the whole page, blended so it reads as
+ *  subtle film grain rather than visible noise. */
+function Grain() {
+  return (
+    <div className="pointer-events-none fixed inset-0 z-40 opacity-[0.04]" style={{ mixBlendMode: 'overlay' }}>
+      <svg className="w-full h-full">
+        <filter id="pml-grain"><feTurbulence type="fractalNoise" baseFrequency={0.8} numOctaves={2} stitchTiles="stitch" /></filter>
+        <rect width="100%" height="100%" filter="url(#pml-grain)" />
+      </svg>
+    </div>
+  );
+}
+
 // ─── Hero: stylized version of the actual ball-trace visual from the report page ──
 
 function HeroTrace() {
-  // The same Catmull-Rom-style smooth arc used on real pitch traces, drawn
-  // once here as a static illustrative curve rather than reading live data.
   const d = 'M 8,78 C 20,55 34,30 50,18 C 66,6 82,10 92,28';
   return (
-    <div className="rounded-2xl overflow-hidden relative" style={{ background: '#0a0d14', border: '1px solid #1a2240' }}>
+    <div className="pml-glass rounded-2xl overflow-hidden relative">
       <svg viewBox="0 0 100 90" width="100%" style={{ display: 'block' }}>
         {[25, 50, 75].map((v) => (
           <g key={v}>
@@ -75,7 +87,7 @@ function HeroTrace() {
         <path d={d} fill="none" stroke="#dc2626" strokeWidth={3.4} strokeLinecap="round" opacity={0.3} />
         <motion.path
           d={d} fill="none" stroke="#f87171" strokeWidth={0.7} strokeLinecap="round"
-          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.6, ease: 'easeOut', delay: 0.3 }}
+          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.6, ease: 'easeOut', delay: 0.5 }}
         />
         <circle cx={8} cy={78} r={1.2} fill="#1d8cf8" />
         <g>
@@ -85,7 +97,7 @@ function HeroTrace() {
                 stroke="#000" strokeWidth={0.6} paintOrder="stroke">IMPACT</text>
         </g>
       </svg>
-      <div className="px-4 py-3 flex items-center gap-2 text-xs" style={{ borderTop: '1px solid #1a2240', color: '#6b7a99' }}>
+      <div className="px-4 py-3 flex items-center gap-2 text-xs relative" style={{ borderTop: '1px solid #1a2240', color: '#6b7a99' }}>
         <Crosshair size={12} style={{ color: '#1d8cf8' }} />
         Every pitch, tracked frame by frame — automatically.
       </div>
@@ -95,15 +107,23 @@ function HeroTrace() {
 
 function Landing() {
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0a0d14' }}>
+    <div className="min-h-screen flex flex-col relative" style={{ background: '#0a0d14' }}>
+      <Grain />
       <Header />
 
       {/* ===== Hero ===== */}
       <section id="top" className="relative overflow-hidden pt-32 pb-20 px-6">
+        <div className="pointer-events-none absolute inset-0 opacity-70">
+          <Silk speed={0.9} scale={1.4} color="#0f2a4a" noiseIntensity={1.4} rotation={0.12} />
+        </div>
         <div className="pointer-events-none absolute inset-0"
-             style={{ background: 'radial-gradient(60% 50% at 50% 0%, rgba(29,140,248,0.08), transparent 70%)' }} />
+             style={{ background: 'radial-gradient(65% 55% at 50% 15%, rgba(10,13,20,0.15) 0%, rgba(10,13,20,0.88) 72%, #0a0d14 100%)' }} />
         <div className="relative max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          >
             <span className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs"
                   style={{ border: '1px solid #1a2240', background: 'rgba(29,140,248,0.06)', color: '#6b7a99' }}>
               <span className="size-1.5 rounded-full" style={{ background: '#1d8cf8' }} />
@@ -121,12 +141,12 @@ function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link to="/signup"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold"
+                    className="pml-btn-pop inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold"
                     style={{ background: '#1d8cf8', color: '#fff' }}>
                 Get started <ArrowRight size={14} />
               </Link>
               <Link to="/login"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold"
+                    className="pml-btn-pop inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold"
                     style={{ border: '1px solid #1a2240', color: '#e8eaf0' }}>
                 Log in
               </Link>
@@ -134,10 +154,14 @@ function Landing() {
             <p className="mt-4 text-xs" style={{ color: '#3a4460' }}>
               No special cameras or markers needed. Works with footage you already have.
             </p>
-          </div>
-          <Reveal>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          >
             <HeroTrace />
-          </Reveal>
+          </motion.div>
         </div>
       </section>
 
@@ -183,10 +207,9 @@ function Landing() {
       {/* ===== CTA ===== */}
       <section className="max-w-6xl mx-auto px-6 py-16 w-full">
         <Reveal>
-          <div className="rounded-3xl p-10 text-center relative overflow-hidden"
-               style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
+          <div className="pml-glass pml-spot rounded-3xl p-10 text-center relative overflow-hidden">
             <div className="pointer-events-none absolute inset-0"
-                 style={{ background: 'radial-gradient(50% 60% at 50% 0%, rgba(29,140,248,0.1), transparent 70%)' }} />
+                 style={{ background: 'radial-gradient(50% 60% at 50% 0%, rgba(29,140,248,0.12), transparent 70%)' }} />
             <div className="relative">
               <h2 className="font-black tracking-tight" style={{ fontFamily: 'var(--font-heading)', fontSize: 'clamp(1.6rem,4vw,2.4rem)', color: '#e8eaf0' }}>
                 Start tracking your next session
@@ -195,7 +218,7 @@ function Landing() {
                 Free to try. Upload a clip and see your first tracked pitch in minutes.
               </p>
               <Link to="/signup"
-                    className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold"
+                    className="pml-btn-pop mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold"
                     style={{ background: '#1d8cf8', color: '#fff' }}>
                 Get started <ArrowRight size={14} />
               </Link>
@@ -211,17 +234,17 @@ function Landing() {
 
 function Step({ n, icon, title, body }: { n: number; icon: React.ReactNode; title: string; body: string }) {
   return (
-    <Reveal delay={n * 0.06}>
-      <div className="rounded-2xl p-6 h-full" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
-        <div className="flex items-center gap-3">
+    <Reveal delay={n * 0.08}>
+      <div className="pml-glass pml-spot rounded-2xl p-6 h-full">
+        <div className="relative flex items-center gap-3">
           <span className="flex items-center justify-center size-10 rounded-xl"
                 style={{ background: 'rgba(29,140,248,0.12)', color: '#1d8cf8' }}>
             {icon}
           </span>
           <span className="text-xs" style={{ color: '#3a4460' }}>Step {n}</span>
         </div>
-        <h3 className="mt-4 text-base font-semibold" style={{ color: '#e8eaf0' }}>{title}</h3>
-        <p className="mt-2 text-sm leading-relaxed" style={{ color: '#6b7a99' }}>{body}</p>
+        <h3 className="relative mt-4 text-base font-semibold" style={{ color: '#e8eaf0' }}>{title}</h3>
+        <p className="relative mt-2 text-sm leading-relaxed" style={{ color: '#6b7a99' }}>{body}</p>
       </div>
     </Reveal>
   );
@@ -230,12 +253,12 @@ function Step({ n, icon, title, body }: { n: number; icon: React.ReactNode; titl
 function FeatureCard({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
     <Reveal>
-      <div className="rounded-2xl p-6 h-full flex gap-4" style={{ background: '#0f1420', border: '1px solid #1a2240' }}>
-        <span className="flex items-center justify-center size-10 rounded-xl flex-shrink-0"
+      <div className="pml-glass pml-spot rounded-2xl p-6 h-full flex gap-4">
+        <span className="relative flex items-center justify-center size-10 rounded-xl flex-shrink-0"
               style={{ background: 'rgba(29,140,248,0.12)', color: '#1d8cf8' }}>
           {icon}
         </span>
-        <div>
+        <div className="relative">
           <h3 className="text-base font-semibold" style={{ color: '#e8eaf0' }}>
             {title}
           </h3>
