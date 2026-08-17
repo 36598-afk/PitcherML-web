@@ -396,15 +396,14 @@ function VideoTrace({ pitch }: { pitch: Pitch }) {
   const visiblePts = pts.filter((p) => p.frame / fps <= currentTime);
 
   return (
-    <div className="relative" style={{ lineHeight: 0 }}>
+    <div className="relative inline-block mx-auto" style={{ lineHeight: 0, maxWidth: '100%' }}>
       {videoOk ? (
         <video
           ref={videoRef}
           src={pitch.videoUrl}
           controls
           preload="metadata"
-          className="w-full"
-          style={{ maxHeight: 420, background: '#000' }}
+          style={{ display: 'block', maxHeight: 420, maxWidth: '100%', background: '#000' }}
           onError={() => setVideoOk(false)}
           onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
           onSeeking={(e) => setCurrentTime(e.currentTarget.currentTime)}
