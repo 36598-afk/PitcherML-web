@@ -465,30 +465,20 @@ function VideoTrace({ pitch }: { pitch: Pitch }) {
               {/* soft glow: a wider, blurred, translucent duplicate of the
                   curve sitting behind the crisp one — cheap broadcast-style
                   glow without relying on filter primitives */}
-              <path d={curveD} fill="none" stroke="#1d8cf8" strokeWidth={2.4}
+              <path d={curveD} fill="none" stroke="#eab308" strokeWidth={2.4}
                     strokeLinecap="round" strokeLinejoin="round"
                     opacity={0.35} vectorEffect="non-scaling-stroke" />
-              <path d={curveD} fill="none" stroke="#4fa8ff" strokeWidth={0.55}
+              <path d={curveD} fill="none" stroke="#fde047" strokeWidth={0.55}
                     strokeLinecap="round" strokeLinejoin="round"
                     vectorEffect="non-scaling-stroke" />
             </>
           )}
-          {svgPts.map((p, i) => {
-            const isLatest = i === svgPts.length - 1;
-            if (!isLatest && i % 3 !== 0) return null; // thin out mid-trail markers so the curve itself reads clearly
-            return (
-              <circle key={i} cx={p.x} cy={p.y} r={isLatest ? 1.3 : 0.55}
-                      fill={isLatest ? '#fff' : '#1d8cf8'}
-                      stroke={isLatest ? '#1d8cf8' : 'none'} strokeWidth={isLatest ? 0.4 : 0}
-                      opacity={isLatest ? 1 : 0.7} />
-            );
-          })}
         </svg>
       )}
       {videoOk && (
         <p className="absolute bottom-2 left-2 text-xs px-2 py-1 rounded"
            style={{ background: 'rgba(0,0,0,0.6)', color: '#6b7a99' }}>
-          Blue dots = tracked ball ({visiblePts.length}/{pts.length})
+          Yellow trace = tracked ball ({visiblePts.length}/{pts.length})
         </p>
       )}
     </div>
