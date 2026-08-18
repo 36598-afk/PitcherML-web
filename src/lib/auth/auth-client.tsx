@@ -21,11 +21,6 @@ const _authClient = createAuthClient({
   baseURL: typeof window !== 'undefined' ? window.location.origin : '',
 });
 
-// How long an unsettled session may stay pending before we treat it as a stuck
-// stale-cookie state and attempt recovery. Generous enough to clear a slow but
-// healthy first load; short enough that a blank preview self-heals quickly.
-const SESSION_RECOVERY_PENDING_TIMEOUT_MS = 8000;
-
 /**
  * Clear the stale HttpOnly session cookie server-side, then reload into a clean
  * unauthenticated state. One-shot per tab (see `claimSessionRecovery`) so an
@@ -48,9 +43,18 @@ function recoverFromStaleSession(): void {
 /**
  * Self-heal a stale-cookie session. A failed session lookup is a returned
  * `error`, not a thrown one, so no error boundary fires and the app would sit
- * blank. Recover on an explicit error, or when the session never settles within
- * the pending timeout. A healthy session resets the guard so a later genuine
- * failure can recover again in the same tab.
+ * blank -- recovering on that is still worth doing.
+ *
+ * The previous version ALSO reloaded whenever isPending simply hadn't
+ * settled within 8 seconds, treating that as evidence of a stuck cookie.
+ * In practice this was firing on ordinary network/backend latency that had
+ * nothing wrong with it -- a plain slow response isn't meaningfully
+ * different from a fast one, and reloading doesn't even fix slowness (it
+ * just restarts the same request against the same possibly-slow backend).
+ * That branch caused far more disruptive false-positive reloads than it
+ * ever fixed genuinely stuck sessions, so it's removed: recovery now only
+ * fires on a real, returned error, which is a much stronger signal that
+ * something is actually broken rather than just running behind.
  */
 function useStaleSessionRecovery(error: unknown, isPending: boolean, isAuthenticated: boolean, skip = false): void {
   useEffect(
@@ -63,12 +67,9 @@ function useStaleSessionRecovery(error: unknown, isPending: boolean, isAuthentic
       }
       if (isAuthenticated) {
         clearSessionRecovery(window.sessionStorage);
-        return;
       }
-      if (!isPending) return;
-
-      const timer = setTimeout(recoverFromStaleSession, SESSION_RECOVERY_PENDING_TIMEOUT_MS);
-      return () => clearTimeout(timer);
+      // No timeout-based reload here anymore -- see the comment above.
+      // isPending is left to resolve on its own; nothing to clean up.
     },
     [error, isPending, isAuthenticated, skip],
   );
