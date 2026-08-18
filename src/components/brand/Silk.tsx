@@ -153,7 +153,7 @@ export default function Silk({
 
     const io = new IntersectionObserver(
       ([entry]) => {
-        const visible = entry.isIntersecting;
+        const visible = entry.isIntersecting && !document.hidden;
         if (reduced) {
           draw(0);
           return;
@@ -168,10 +168,28 @@ export default function Silk({
     );
     io.observe(canvas);
 
+    // Also react directly to the tab itself going to/from the background,
+    // not just scroll-based intersection -- an intersecting-but-backgrounded
+    // tab would otherwise keep this animation (and the GPU memory it holds)
+    // alive the whole time it's not being looked at.
+    const onVisibility = () => {
+      const canvasVisible = canvas.getBoundingClientRect().bottom > 0;
+      if (document.hidden || !canvasVisible) {
+        if (raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+      } else if (!raf && !reduced) {
+        raf = requestAnimationFrame(render);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     if (reduced) draw(0);
     else raf = requestAnimationFrame(render);
 
     return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
       if (raf) cancelAnimationFrame(raf);
       io.disconnect();
       window.removeEventListener('resize', resize);
