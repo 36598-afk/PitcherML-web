@@ -202,11 +202,11 @@ function Landing() {
 
       {/* ===== Hero ===== */}
       <section id="top" className="relative overflow-hidden pt-32 pb-20 px-6">
-        <div className="pointer-events-none absolute inset-0 opacity-70">
-          <Silk speed={0.9} scale={1.4} color="#0f2a4a" noiseIntensity={1.4} rotation={0.12} />
+        <div className="pointer-events-none absolute inset-0 opacity-90">
+          <Silk speed={0.9} scale={1.4} color="#123a6b" noiseIntensity={1.4} rotation={0.12} />
         </div>
         <div className="pointer-events-none absolute inset-0"
-             style={{ background: 'radial-gradient(65% 55% at 50% 15%, rgba(10,13,20,0.15) 0%, rgba(10,13,20,0.88) 72%, #0a0d14 100%)' }} />
+             style={{ background: 'radial-gradient(70% 60% at 50% 10%, rgba(10,13,20,0) 0%, rgba(10,13,20,0.35) 55%, #0a0d14 100%)' }} />
         <div className="relative max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <HeroCopy />
           <HeroVisual />
