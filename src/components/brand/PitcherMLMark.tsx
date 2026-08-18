@@ -1,16 +1,14 @@
 /**
- * The PitcherML mark: a single tracked arc from release (white dot) to
- * impact (accent dot) — the same idea as the actual product visualization,
- * reduced to one glyph.
+ * The PitcherML mark: a simple baseball -- a filled circle with two curved
+ * seam lines. Reads clearly at small sizes (nav bar, favicon) unlike a bare
+ * abstract line.
  */
 export default function PitcherMLMark({
   size = 24,
   className = '',
-  dot = true,
 }: {
   size?: number | string;
   className?: string;
-  dot?: boolean;
 }) {
   return (
     <svg
@@ -21,9 +19,9 @@ export default function PitcherMLMark({
       className={className}
       aria-hidden
     >
-      <path d="M3 19 C 9 15 14 9 21 5" stroke="var(--color-accent)" strokeWidth="2.2" strokeLinecap="round" />
-      {dot && <circle cx="3.4" cy="19" r="1.5" fill="#fff" />}
-      {dot && <circle cx="20.6" cy="5" r="1.8" fill="var(--color-accent)" />}
+      <circle cx="12" cy="12" r="10" fill="var(--color-accent)" />
+      <path d="M8.4 3.8C10 7.6 10 16.4 8.4 20.2" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+      <path d="M15.6 3.8C14 7.6 14 16.4 15.6 20.2" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" fill="none" />
     </svg>
   );
 }

@@ -1,17 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
-
-const navLinks = [
-  { label: 'Features', href: '/#features' },
-  { label: 'How It Works', href: '/#how-it-works' },
-  { label: 'Analyze Pitch', href: '/pitch-analysis' },
-];
+import PitcherMLMark from '@/components/brand/PitcherMLMark';
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -32,44 +26,14 @@ export default function Header() {
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center shrink-0 min-w-0">
-          <img
-            src="/airo-assets/images/logo/horizontal"
-            alt="PitcherML"
-            className="block h-auto max-h-9 w-auto max-w-full object-contain"
-          />
+        <Link to="/" className="flex items-center gap-2.5 shrink-0 min-w-0">
+          <PitcherMLMark size={26} />
+          <span className="text-[1.05rem] font-bold tracking-[-0.01em]" style={{ color: '#e8eaf0', fontFamily: 'var(--font-sans)' }}>
+            PitcherML
+          </span>
         </Link>
 
-        {/* Desktop Nav */}
-        <nav aria-label="Main navigation" className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) =>
-            link.href.startsWith('/') && !link.href.startsWith('/#') ? (
-              <Link
-                key={link.label}
-                to={link.href}
-                className="text-sm font-medium tracking-wide transition-colors duration-150"
-                style={{ color: '#6b7a99', fontFamily: 'var(--font-sans)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#e8eaf0')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#6b7a99')}
-              >
-                {link.label}
-              </Link>
-            ) : (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-sm font-medium tracking-wide transition-colors duration-150"
-                style={{ color: '#6b7a99', fontFamily: 'var(--font-sans)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#e8eaf0')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#6b7a99')}
-              >
-                {link.label}
-              </a>
-            )
-          )}
-        </nav>
-
-        {/* Desktop CTA */}
+        {/* Desktop CTA -- login/signup only, per request */}
         <div className="hidden md:flex items-center gap-4">
           <Link
             to="/login"
@@ -97,7 +61,7 @@ export default function Header() {
               (e.currentTarget as HTMLElement).style.background = '#1d8cf8';
             }}
           >
-            Get Started
+            Sign Up Free
           </Link>
         </div>
 
@@ -112,7 +76,7 @@ export default function Header() {
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu -- login/signup only, per request */}
       {mobileOpen && (
         <div
           className="md:hidden border-t"
@@ -122,38 +86,16 @@ export default function Header() {
           }}
         >
           <nav aria-label="Mobile navigation" className="flex flex-col px-6 py-4 gap-4">
-            {navLinks.map((link) =>
-              link.href.startsWith('/') && !link.href.startsWith('/#') ? (
-                <Link
-                  key={link.label}
-                  to={link.href}
-                  className="text-sm font-medium py-2"
-                  style={{ color: '#6b7a99', fontFamily: 'var(--font-sans)' }}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ) : (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  className="text-sm font-medium py-2"
-                  style={{ color: '#6b7a99', fontFamily: 'var(--font-sans)' }}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </a>
-              )
-            )}
-            <a
-              href="#"
+            <Link
+              to="/login"
               className="text-sm font-medium py-2"
               style={{ color: '#6b7a99', fontFamily: 'var(--font-sans)' }}
+              onClick={() => setMobileOpen(false)}
             >
               Log In
-            </a>
-            <a
-              href="#"
+            </Link>
+            <Link
+              to="/signup"
               className="text-sm font-semibold px-5 py-2.5 text-center mt-2"
               style={{
                 background: '#1d8cf8',
@@ -161,9 +103,10 @@ export default function Header() {
                 fontFamily: 'var(--font-sans)',
                 borderRadius: '3px',
               }}
+              onClick={() => setMobileOpen(false)}
             >
-              Get Started
-            </a>
+              Sign Up Free
+            </Link>
           </nav>
         </div>
       )}
