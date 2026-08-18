@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useSession } from '@/lib/auth/auth-client';
 import {
-  Loader2, Target, Activity, Grid3x3, Pencil, Film, Crosshair, Check, X, Mail,
+  Loader2, Target, Activity, Grid3x3, Pencil, Film, Crosshair, Check, X, Mail, Camera,
 } from 'lucide-react';
 import Header from '@/layouts/parts/Header';
 import Footer from '@/layouts/parts/Footer';
@@ -26,7 +26,13 @@ function useMounted() {
 }
 
 export default function RootPage() {
-  const { isAuthenticated, isPending } = useSession();
+  // The landing page doesn't need auth to resolve fast the way a protected
+  // tool page does -- if the session check is slow, worst case a visitor
+  // sees the landing page a moment longer, not a broken app. Skipping the
+  // shared stale-session recovery here specifically avoids a disruptive
+  // full-page reload on a page that never needed that safety net; every
+  // other page's useSession() call is unaffected.
+  const { isAuthenticated, isPending } = useSession({ skipStaleRecovery: true });
 
   if (isPending) {
     return (
@@ -86,7 +92,7 @@ export function Landing() {
             <span className="text-[clamp(3.25rem,9vw,7rem)] font-bold tracking-[-0.03em] text-white">PitcherML</span>
           </div>
           <span className="relative mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-[0.8rem] font-semibold tracking-[0.04em]" style={{ color: 'var(--color-positive)' }}>
-            Free to try
+            Free
           </span>
           <div className="absolute inset-x-0 bottom-8 flex flex-col items-center gap-1.5 text-[0.72rem] tracking-[0.12em] text-white/40">
             <span>SCROLL</span>
@@ -114,14 +120,14 @@ export function Landing() {
               <p className="mt-6 max-w-[32rem] text-[1.05rem] leading-relaxed text-white/65">
                 Upload bullpen or game footage and PitcherML tracks the ball automatically —
                 flight path, impact point, and strike-zone location for every pitch, with a
-                full session report you can review pitch by pitch. Free to try, no card needed.
+                full session report you can review pitch by pitch. Free, no card needed.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link to="/signup" className="btn-primary">Sign up free</Link>
                 <Link to="/login" className="btn-ghost">Log in</Link>
               </div>
               <p className="mt-4 text-[0.8rem] text-white/45">
-                No special cameras or markers needed. Works with footage you already have.
+                No special cameras needed — just a phone and a tripod (or anything to hold it steady). Works with footage you already have.
               </p>
             </div>
             <Reveal className="w-full">
@@ -136,6 +142,10 @@ export function Landing() {
           <h2 className="mt-4 max-w-[30rem] text-[clamp(1.6rem,3.6vw,2.4rem)] font-semibold leading-tight tracking-[-0.02em]">
             See exactly what you get. Free.
           </h2>
+          <p className="mt-3 flex items-center gap-2 text-[0.85rem] text-white/50">
+            <Camera size={15} style={{ color: 'var(--color-accent)' }} />
+            All you need: a phone camera on a tripod (or anything steady) pointed at the pitch.
+          </p>
 
           {/* Live tracking video -- pick between a few real traced examples.
               DROP REAL CLIPS IN: put video files in /public/videos/ and add
@@ -275,7 +285,7 @@ function GetStartedCta() {
       <div className="pointer-events-none absolute inset-0 opacity-30" style={{ background: 'radial-gradient(600px circle at 50% 0%, rgba(29,140,248,0.15), transparent 70%)' }} />
       <div className="relative mx-auto max-w-[34rem]">
         <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[0.72rem] font-semibold" style={{ background: 'rgba(16,185,129,0.12)', color: 'var(--color-positive)' }}>
-          Free to try
+          Free
         </span>
         <h2 className="mt-4 text-[clamp(1.6rem,4vw,2.4rem)] font-semibold tracking-[-0.02em]">Start tracking your next session</h2>
         <p className="mt-4 text-[0.95rem] leading-relaxed text-white/60">
@@ -327,14 +337,32 @@ function RequestAppSection() {
         </p>
 
         {status === 'done' ? (
-          <div className="mt-6 flex flex-col items-center gap-4">
+          <div className="mt-6 flex flex-col items-center gap-5">
             <div className="flex items-center justify-center gap-2 text-[0.95rem] font-semibold" style={{ color: 'var(--color-positive)' }}>
               <Check size={18} /> Got it — we'll be in touch.
             </div>
             {TESTFLIGHT_URL && (
-              <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary">
-                Open TestFlight
-              </a>
+              <>
+                <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary">
+                  On your phone? Tap here to open TestFlight
+                </a>
+                <div className="glass rounded-2xl p-5 flex flex-col items-center gap-3 max-w-xs">
+                  <p className="text-[0.8rem] text-white/60 text-center">
+                    On a computer? TestFlight links only work when opened directly on the phone —
+                    scan this with your phone's camera instead.
+                  </p>
+                  {/* Free, no-signup QR generator -- just an image URL, no
+                      new dependency or backend needed. */}
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(TESTFLIGHT_URL)}`}
+                    alt="Scan to open TestFlight on your phone"
+                    width={180}
+                    height={180}
+                    className="rounded-lg"
+                    style={{ background: '#fff' }}
+                  />
+                </div>
+              </>
             )}
           </div>
         ) : (
@@ -362,16 +390,28 @@ function RequestAppSection() {
         )}
 
         {/*
-          INSTRUCTIONS VIDEO/IMAGE GOES HERE (how to install TestFlight).
-          Replace this block once the file is available.
+          A real instructions VIDEO can replace this written list once
+          available -- just swap this <ol> block for a <video> the same way
+          the traced-examples showcase does it above.
         */}
-        <div className="mt-8 rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div className="aspect-video flex flex-col items-center justify-center gap-2" style={{ background: '#070a10' }}>
-            <Film size={28} style={{ color: 'var(--color-accent)' }} />
-            <span className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: 'var(--color-accent)' }}>
-              Install instructions coming soon
-            </span>
-          </div>
+        <div className="mt-8 rounded-2xl overflow-hidden p-6 text-left" style={{ border: '1px solid rgba(255,255,255,0.1)', background: '#070a10' }}>
+          <p className="text-[0.75rem] font-bold uppercase tracking-[0.14em] mb-4 text-center" style={{ color: 'var(--color-accent)' }}>
+            How to install
+          </p>
+          <ol className="space-y-3 text-[0.88rem] text-white/70 max-w-sm mx-auto">
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 flex items-center justify-center size-6 rounded-full text-[0.75rem] font-bold" style={{ background: 'rgba(29,140,248,0.15)', color: 'var(--color-accent)' }}>1</span>
+              Install the free <strong className="text-white">TestFlight</strong> app from the App Store.
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 flex items-center justify-center size-6 rounded-full text-[0.75rem] font-bold" style={{ background: 'rgba(29,140,248,0.15)', color: 'var(--color-accent)' }}>2</span>
+              On your phone, tap "Open TestFlight" above. On a computer, scan the QR code with your phone's camera instead — TestFlight links only work when opened directly on the device.
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 flex items-center justify-center size-6 rounded-full text-[0.75rem] font-bold" style={{ background: 'rgba(29,140,248,0.15)', color: 'var(--color-accent)' }}>3</span>
+              Tap <strong className="text-white">Accept</strong>, then <strong className="text-white">Install</strong>. PitcherML will appear on your home screen like any other app.
+            </li>
+          </ol>
         </div>
       </div>
     </Reveal>
@@ -461,11 +501,11 @@ function ZoneGridDemo() {
    session videos, so file size directly affects page load time. Empty
    array falls back to the "coming soon" placeholder automatically. */
 const TRACED_EXAMPLES: { label: string; src: string }[] = [
-  { label: 'Pitch 1', src: '/videos/example-1.mp4' },
-  { label: 'Pitch 2', src: '/videos/example-2.mp4' },
-  { label: 'Pitch 3', src: '/videos/example-3.mp4' },
-  { label: 'Pitch 4', src: '/videos/example-4.mp4' },
-  { label: 'Pitch 5', src: '/videos/example-5.mp4' },
+  { label: 'Cy Pitch 24', src: '/videos/clean-1.mp4' },
+  { label: 'Pitch 45', src: '/videos/clean-2.mp4' },
+  { label: 'Pitch 101', src: '/videos/clean-3.mp4' },
+  { label: 'Pitch 151', src: '/videos/clean-4.mp4' },
+  { label: 'Pitch 231', src: '/videos/clean-5.mp4' },
 ];
 
 function TracedClipsShowcase() {

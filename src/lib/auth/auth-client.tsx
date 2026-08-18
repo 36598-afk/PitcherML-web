@@ -52,10 +52,10 @@ function recoverFromStaleSession(): void {
  * the pending timeout. A healthy session resets the guard so a later genuine
  * failure can recover again in the same tab.
  */
-function useStaleSessionRecovery(error: unknown, isPending: boolean, isAuthenticated: boolean): void {
+function useStaleSessionRecovery(error: unknown, isPending: boolean, isAuthenticated: boolean, skip = false): void {
   useEffect(
     function staleSessionRecovery() {
-      if (typeof window === 'undefined') return;
+      if (typeof window === 'undefined' || skip) return;
 
       if (error) {
         recoverFromStaleSession();
@@ -70,7 +70,7 @@ function useStaleSessionRecovery(error: unknown, isPending: boolean, isAuthentic
       const timer = setTimeout(recoverFromStaleSession, SESSION_RECOVERY_PENDING_TIMEOUT_MS);
       return () => clearTimeout(timer);
     },
-    [error, isPending, isAuthenticated],
+    [error, isPending, isAuthenticated, skip],
   );
 }
 
@@ -87,11 +87,11 @@ export const { signIn, signUp, signOut } = _authClient;
  *   if (isPending) return <Spinner />;
  *   return isAuthenticated ? <span>{user.name}</span> : <a href="/login">Sign In</a>;
  */
-export function useSession() {
+export function useSession(options?: { skipStaleRecovery?: boolean }) {
   const { data: session, isPending, error } = _authClient.useSession();
   const isAuthenticated = !isPending && !!session?.user;
 
-  useStaleSessionRecovery(error, isPending, isAuthenticated);
+  useStaleSessionRecovery(error, isPending, isAuthenticated, options?.skipStaleRecovery);
 
   return {
     session,
