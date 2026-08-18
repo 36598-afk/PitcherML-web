@@ -211,6 +211,18 @@ export function Landing() {
           <Reveal className="mt-8">
             <TracedClipsShowcase />
           </Reveal>
+
+          {/* Setup / recording guide */}
+          <Reveal className="mt-5">
+            <div className="glass rounded-2xl overflow-hidden">
+              <video
+                src="/videos/instructions.mp4"
+                controls
+                playsInline
+                className="w-full h-auto block"
+              />
+            </div>
+          </Reveal>
         </section>
 
         {/* ===== Request the app ===== */}

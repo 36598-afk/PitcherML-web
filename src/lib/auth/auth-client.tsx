@@ -22,22 +22,26 @@ const _authClient = createAuthClient({
 });
 
 /**
- * Clear the stale HttpOnly session cookie server-side, then reload into a clean
- * unauthenticated state. One-shot per tab (see `claimSessionRecovery`) so an
- * unfixable session can't reload-loop.
+ * Clear the stale HttpOnly session cookie server-side. One-shot per tab (see
+ * `claimSessionRecovery`) so this only fires once even if the error repeats.
+ *
+ * This USED to also force a full page reload afterward, on the theory that
+ * a hard refresh was needed to land in a clean unauthenticated state. That
+ * turned out to be the actual cause of a persistent, disruptive "page keeps
+ * reloading" report that survived a previous, narrower fix (removing only
+ * the timeout-based trigger, while keeping this error-based one) -- meaning
+ * the session lookup here was genuinely erroring, not just running slow.
+ * The reload was never actually necessary for correctness: React already
+ * re-renders to the unauthenticated UI the moment `error`/`isAuthenticated`
+ * update, with no reload required. Clearing the cookie in the background
+ * still fixes the root cause for the NEXT natural page load, without
+ * yanking the current one out from under the person using it.
  */
 function recoverFromStaleSession(): void {
   if (typeof window === 'undefined') return;
   if (!claimSessionRecovery(window.sessionStorage)) return;
 
-  void fetch(SESSION_RECOVERY_URL, { cache: 'no-store', credentials: 'include' })
-    .catch(() => undefined)
-    .finally(() => {
-      // Logged so a future "preview keeps reloading" report is diagnosable —
-      // more than one of these per tab points at a clear that isn't sticking.
-      console.info(JSON.stringify({ event: 'auth.session.recovery.reloading' }));
-      window.location.reload();
-    });
+  void fetch(SESSION_RECOVERY_URL, { cache: 'no-store', credentials: 'include' }).catch(() => undefined);
 }
 
 /**
