@@ -110,68 +110,200 @@ html {
   scroll-behavior: smooth;
 }
 
-/* ── Landing page visual utilities (ported from the Signal design, tinted
-   to PitcherML's own blue accent instead of cyan) ────────────────────── */
-
-/* Glass card: a soft translucent surface with a gradient hairline border
-   and inset top highlight, instead of a flat solid fill + plain border. */
-.pml-glass {
-  position: relative;
-  background: linear-gradient(180deg, rgba(29, 140, 248, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-  backdrop-filter: blur(6px);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.pml-glass:hover {
-  transform: translateY(-3px);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12), 0 16px 34px -12px rgba(29, 140, 248, 0.35);
-}
-.pml-glass::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1.5px;
-  background: linear-gradient(
-    180deg,
-    rgba(29, 140, 248, 0.85) 0%,
-    rgba(29, 140, 248, 0.25) 22%,
-    rgba(255, 255, 255, 0.04) 42%,
-    rgba(255, 255, 255, 0.04) 60%,
-    rgba(29, 140, 248, 0.25) 80%,
-    rgba(29, 140, 248, 0.85) 100%
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* Spotlight glow that follows in on hover -- a cheap approximation of a
-   cursor-tracked highlight using a fixed radial gradient at the top. */
-.pml-spot {
-  position: relative;
-  overflow: hidden;
-}
-.pml-spot::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-  background: radial-gradient(340px circle at 50% 0%, rgba(29, 140, 248, 0.14), transparent 65%);
-  pointer-events: none;
-}
-.pml-spot:hover::after {
-  opacity: 1;
+/* ══════════════════════════════════════════════════════════════════════════
+   Ported from Signal's landing page design, as close to verbatim as this
+   project's Tailwind v3 setup allows. The one unavoidable change: Signal's
+   source uses Tailwind v4's `@theme { --color-x: ... }` directive, which
+   this project's Tailwind v3 does not understand at all -- it would either
+   be silently ignored or fail the build. Translated 1:1 into plain CSS
+   custom properties instead, which do exactly the same job when read via
+   var(--color-x). Every color value, utility class, and keyframe below is
+   otherwise identical to the source. Distinct `--color-*` naming keeps
+   these from colliding with this project's own pre-existing --accent /
+   --background / etc. tokens used elsewhere in the app.
+   ══════════════════════════════════════════════════════════════════════ */
+:root {
+  --color-base: #0c0c0c;
+  --color-panel: #131722;
+  --color-panel-2: #171c28;
+  --color-line: #23262c;
+  --color-line-soft: #191b1f;
+  --color-text: #ffffff;
+  --color-muted: #a1a7ad;
+  --color-faint: #6a7076;
+  /* The electric accent, kept as PitcherML blue rather than Signal's cyan --
+     everything else on this page is verbatim, but the brand color is the
+     one place "just change the name" and "still be PitcherML" pull against
+     each other, so the accent follows the brand already used everywhere
+     else in this app (report page, header, footer). */
+  --color-accent: #1d8cf8;
+  --color-accent-2: #a8d4fd;
+  --color-accent-deep: #0b2551;
+  --color-positive: #10b981;
+  --color-negative: #ff5c5c;
+  --color-warn: #f59e0b;
+  --ease-signal: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --tap: 44px;
 }
 
-/* Snappy button pop, matching the reference's hover feel. */
-.pml-btn-pop {
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+@layer utilities {
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  :where(.tap, .tap-icon) {
+    display: inline-flex;
+    align-items: center;
+  }
+  :where(.tap-icon) {
+    justify-content: center;
+  }
+  .tap {
+    min-height: var(--tap);
+  }
+  .tap-icon {
+    min-height: var(--tap);
+    min-width: var(--tap);
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    background: var(--color-accent);
+    color: #fff;
+    padding: 0.75rem 1.25rem;
+    min-height: var(--tap);
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: transform 0.3s var(--ease-out-soft), box-shadow 0.3s var(--ease-out-soft);
+  }
+  .btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 34px -8px rgba(29, 140, 248, 0.55);
+  }
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.85);
+    padding: 0.75rem 1.25rem;
+    min-height: var(--tap);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: border-color 0.3s ease, color 0.3s ease;
+  }
+  .btn-ghost:hover {
+    border-color: rgba(29, 140, 248, 0.6);
+    color: #fff;
+  }
+  .nav-a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    transition: color 0.2s ease;
+  }
+  .nav-a:hover {
+    color: #fff;
+  }
+
+  .spot {
+    position: relative;
+  }
+  .spot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    background: radial-gradient(340px circle at 50% 0%, rgba(29, 140, 248, 0.12), transparent 65%);
+    pointer-events: none;
+  }
+  .spot:hover::after {
+    opacity: 1;
+  }
+
+  .glass {
+    position: relative;
+    background: rgba(255, 255, 255, 0.01);
+    backdrop-filter: blur(4px);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.4px;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(255, 255, 255, 0.15) 20%,
+      rgba(255, 255, 255, 0) 40%,
+      rgba(255, 255, 255, 0) 60%,
+      rgba(255, 255, 255, 0.15) 80%,
+      rgba(255, 255, 255, 0.45) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 }
-.pml-btn-pop:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 34px -8px rgba(29, 140, 248, 0.55);
+
+@keyframes sig-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes heroDraw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes introOut {
+  to { opacity: 0; visibility: hidden; }
+}
+@keyframes introFadeOut {
+  to { opacity: 0; }
+}
+@keyframes introUnblur {
+  from { filter: blur(18px); }
+  to { filter: blur(0px); }
+}
+@keyframes introZoom {
+  from { transform: scale(1); }
+  to { transform: scale(60); }
+}
+@keyframes introOpen {
+  from {
+    d: path("M-4000 -4000 H5000 V5000 H-4000 Z M410 500 C 470 500 520 470 590 430 C 596 427 596 427 590 430 C 520 470 470 500 410 500 Z M410 500 C 470 500 520 530 590 570 C 596 573 596 573 590 570 C 520 530 470 500 410 500 Z");
+  }
+  to {
+    d: path("M-4000 -4000 H5000 V5000 H-4000 Z M410 500 C 470 500 520 470 598 425 C 612 430 619 462 618 500 C 520 500 470 500 410 500 Z M410 500 C 470 500 520 530 598 575 C 612 570 619 538 618 500 C 520 500 470 500 410 500 Z");
+  }
+}
+@keyframes introUnify {
+  to {
+    d: path("M-4000 -4000 H5000 V5000 H-4000 Z M410 500 C 470 500 520 470 598 425 C 612 430 619 462 618 500 C 619 538 612 570 598 575 C 520 530 470 500 410 500 Z");
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
