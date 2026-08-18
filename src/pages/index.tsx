@@ -110,7 +110,7 @@ export function Landing() {
           <div className="relative mx-auto grid max-w-[100rem] items-center gap-10 px-[clamp(1.5rem,4vw,4.5rem)] pb-16 pt-20 md:grid-cols-2 md:pt-28">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[0.72rem] tracking-[0.04em] text-white/60">
-                <span className="size-1.5 rounded-full" style={{ background: 'var(--color-positive)' }} /> Free — ball tracking + pitch analytics, from a phone video
+                <span className="size-1.5 rounded-full" style={{ background: 'var(--color-positive)' }} /> Free — just a phone on a tripod
               </span>
               <h1 className="mt-6 text-[clamp(2.1rem,5.2vw,3.9rem)] font-semibold leading-[1.02] tracking-[-0.02em]">
                 Point a camera.
@@ -136,44 +136,18 @@ export function Landing() {
           </div>
         </section>
 
-        {/* ===== How it works (product showcase) ===== */}
+        {/* ===== Graphs: your session report ===== */}
         <section className="mx-auto max-w-[100rem] px-[clamp(1.5rem,4vw,4.5rem)] py-16">
           <SectionKicker>How it works</SectionKicker>
           <h2 className="mt-4 max-w-[30rem] text-[clamp(1.6rem,3.6vw,2.4rem)] font-semibold leading-tight tracking-[-0.02em]">
-            See exactly what you get. Free.
+            Your session report, automatically.
           </h2>
           <p className="mt-3 flex items-center gap-2 text-[0.85rem] text-white/50">
             <Camera size={15} style={{ color: 'var(--color-accent)' }} />
             All you need: a phone camera on a tripod (or anything steady) pointed at the pitch.
           </p>
 
-          {/* Live tracking video -- pick between a few real traced examples.
-              DROP REAL CLIPS IN: put video files in /public/videos/ and add
-              an entry to TRACED_EXAMPLES below with the matching path. */}
-          <Reveal className="mt-8">
-            <TracedClipsShowcase />
-          </Reveal>
-
-          {/* Trace animation + manual review, side by side */}
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <Reveal className="glass spot rounded-2xl p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <Activity size={16} style={{ color: 'var(--color-accent)' }} />
-                <span className="text-[0.85rem] font-semibold">Every pitch, traced automatically</span>
-              </div>
-              <HeroTrace bare />
-            </Reveal>
-            <Reveal className="glass spot rounded-2xl p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <Pencil size={16} style={{ color: 'var(--color-accent)' }} />
-                <span className="text-[0.85rem] font-semibold">Manual review, if you need it</span>
-              </div>
-              <ManualReviewDemo />
-            </Reveal>
-          </div>
-
-          {/* The 3 session-end graphs */}
-          <div className="mt-5 grid gap-5 md:grid-cols-3">
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
             <Reveal className="glass spot rounded-2xl p-5">
               <div className="mb-3 flex items-center gap-2">
                 <Target size={16} style={{ color: 'var(--color-accent)' }} />
@@ -199,14 +173,49 @@ export function Landing() {
           <p className="mt-4 text-[0.75rem] text-white/40">Illustrative data. Your real session report is generated from your own footage.</p>
         </section>
 
-        {/* ===== Request the app ===== */}
-        <section className="mx-auto max-w-[100rem] px-[clamp(1.5rem,4vw,4.5rem)] py-16">
-          <RequestAppSection />
+        {/* ===== Trace + manual review, side by side ===== */}
+        <section className="mx-auto max-w-[100rem] px-[clamp(1.5rem,4vw,4.5rem)] py-6">
+          <div className="grid gap-5 md:grid-cols-2">
+            <Reveal className="glass spot rounded-2xl p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <Activity size={16} style={{ color: 'var(--color-accent)' }} />
+                <span className="text-[0.85rem] font-semibold">Every pitch, traced automatically</span>
+              </div>
+              <HeroTrace bare />
+            </Reveal>
+            <Reveal className="glass spot rounded-2xl p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <Pencil size={16} style={{ color: 'var(--color-accent)' }} />
+                <span className="text-[0.85rem] font-semibold">Manual review, if you need it</span>
+              </div>
+              <ManualReviewDemo />
+            </Reveal>
+          </div>
         </section>
 
         {/* ===== CTA ===== */}
         <section className="mx-auto max-w-[100rem] px-[clamp(1.5rem,4vw,4.5rem)] py-16">
           <GetStartedCta />
+        </section>
+
+        {/* ===== See exactly what you get: real traced examples ===== */}
+        <section className="mx-auto max-w-[100rem] px-[clamp(1.5rem,4vw,4.5rem)] py-16">
+          <SectionKicker>Real footage</SectionKicker>
+          <h2 className="mt-4 max-w-[30rem] text-[clamp(1.6rem,3.6vw,2.4rem)] font-semibold leading-tight tracking-[-0.02em]">
+            See exactly what you get. Free.
+          </h2>
+
+          {/* Live tracking video -- pick between a few real traced examples.
+              DROP REAL CLIPS IN: put video files in /public/videos/ and add
+              an entry to TRACED_EXAMPLES above with the matching path. */}
+          <Reveal className="mt-8">
+            <TracedClipsShowcase />
+          </Reveal>
+        </section>
+
+        {/* ===== Request the app ===== */}
+        <section className="mx-auto max-w-[100rem] px-[clamp(1.5rem,4vw,4.5rem)] py-16">
+          <RequestAppSection />
         </section>
 
         <Footer />
@@ -297,20 +306,18 @@ function GetStartedCta() {
   );
 }
 
-/* ── Request the app (email capture -> TestFlight) ──────────────────────────
+/* ── Request the app -- TestFlight access shown immediately, no gate ────────
    Fill this in once the public TestFlight link exists (App Store Connect ->
-   TestFlight tab -> External Testing group -> Public Link toggle). Until
-   then this stays null and the success state just confirms the email was
-   saved, without an "Open TestFlight" button that would 404. */
+   TestFlight tab -> External Testing group -> Public Link toggle). */
 const TESTFLIGHT_URL: string | null = 'https://testflight.apple.com/join/efh9eCMd';
 
 function RequestAppSection() {
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
 
-  async function submit(e: React.FormEvent) {
+  async function submitEmail(e: React.FormEvent) {
     e.preventDefault();
-    setStatus('sending');
+    setEmailStatus('sending');
     try {
       const res = await fetch('/api/app-access-requests', {
         method: 'POST',
@@ -319,9 +326,9 @@ function RequestAppSection() {
         body: JSON.stringify({ email }),
       });
       if (!res.ok) throw new Error();
-      setStatus('done');
+      setEmailStatus('done');
     } catch {
-      setStatus('error');
+      setEmailStatus('error');
     }
   }
 
@@ -330,63 +337,31 @@ function RequestAppSection() {
       <div className="pointer-events-none absolute inset-0 opacity-25" style={{ background: 'radial-gradient(600px circle at 50% 0%, rgba(29,140,248,0.15), transparent 70%)' }} />
       <div className="relative mx-auto max-w-[36rem] text-center">
         <SectionKicker>Mobile app</SectionKicker>
-        <h2 className="mt-4 text-[clamp(1.6rem,4vw,2.4rem)] font-semibold tracking-[-0.02em]">Request the app</h2>
+        <h2 className="mt-4 text-[clamp(1.6rem,4vw,2.4rem)] font-semibold tracking-[-0.02em]">Get the app</h2>
         <p className="mt-4 text-[0.95rem] leading-relaxed text-white/60">
-          The PitcherML iOS app is in TestFlight. Enter your email and we'll send you access
-          along with instructions for installing TestFlight.
+          The PitcherML iOS app is in TestFlight — free and open to anyone.
         </p>
 
-        {status === 'done' ? (
+        {TESTFLIGHT_URL && (
           <div className="mt-6 flex flex-col items-center gap-5">
-            <div className="flex items-center justify-center gap-2 text-[0.95rem] font-semibold" style={{ color: 'var(--color-positive)' }}>
-              <Check size={18} /> Got it — we'll be in touch.
-            </div>
-            {TESTFLIGHT_URL && (
-              <>
-                <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary">
-                  On your phone? Tap here to open TestFlight
-                </a>
-                <div className="glass rounded-2xl p-5 flex flex-col items-center gap-3 max-w-xs">
-                  <p className="text-[0.8rem] text-white/60 text-center">
-                    On a computer? TestFlight links only work when opened directly on the phone —
-                    scan this with your phone's camera instead.
-                  </p>
-                  {/* Free, no-signup QR generator -- just an image URL, no
-                      new dependency or backend needed. */}
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(TESTFLIGHT_URL)}`}
-                    alt="Scan to open TestFlight on your phone"
-                    width={180}
-                    height={180}
-                    className="rounded-lg"
-                    style={{ background: '#fff' }}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <form onSubmit={submit} className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.03] px-4 py-2.5 w-full sm:w-auto sm:min-w-[20rem]">
-              <Mail size={16} className="text-white/40 shrink-0" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@email.com"
-                className="bg-transparent outline-none text-sm w-full text-white placeholder:text-white/30"
+            <a href={TESTFLIGHT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary">
+              On your phone? Tap here to open TestFlight
+            </a>
+            <div className="glass rounded-2xl p-5 flex flex-col items-center gap-3 max-w-xs">
+              <p className="text-[0.8rem] text-white/60 text-center">
+                On a computer? TestFlight links only work when opened directly on the phone —
+                scan this with your phone's camera instead.
+              </p>
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(TESTFLIGHT_URL)}`}
+                alt="Scan to open TestFlight on your phone"
+                width={180}
+                height={180}
+                className="rounded-lg"
+                style={{ background: '#fff' }}
               />
             </div>
-            <button type="submit" disabled={status === 'sending'} className="btn-primary w-full sm:w-auto">
-              {status === 'sending' ? 'Sending…' : 'Request access'}
-            </button>
-          </form>
-        )}
-        {status === 'error' && (
-          <p className="mt-3 flex items-center justify-center gap-1.5 text-[0.8rem]" style={{ color: 'var(--color-negative)' }}>
-            <X size={14} /> Something went wrong — try again in a moment.
-          </p>
+          </div>
         )}
 
         {/*
@@ -398,20 +373,55 @@ function RequestAppSection() {
           <p className="text-[0.75rem] font-bold uppercase tracking-[0.14em] mb-4 text-center" style={{ color: 'var(--color-accent)' }}>
             How to install
           </p>
-          <ol className="space-y-3 text-[0.88rem] text-white/70 max-w-sm mx-auto">
+          <ol className="space-y-3 text-[0.88rem] text-white/70 max-w-md mx-auto">
             <li className="flex gap-3">
               <span className="flex-shrink-0 flex items-center justify-center size-6 rounded-full text-[0.75rem] font-bold" style={{ background: 'rgba(29,140,248,0.15)', color: 'var(--color-accent)' }}>1</span>
-              Install the free <strong className="text-white">TestFlight</strong> app from the App Store.
+              <span>Install the free TestFlight app from the App Store.</span>
             </li>
             <li className="flex gap-3">
               <span className="flex-shrink-0 flex items-center justify-center size-6 rounded-full text-[0.75rem] font-bold" style={{ background: 'rgba(29,140,248,0.15)', color: 'var(--color-accent)' }}>2</span>
-              On your phone, tap "Open TestFlight" above. On a computer, scan the QR code with your phone's camera instead — TestFlight links only work when opened directly on the device.
+              <span>On your phone, tap "Open TestFlight" above, or scan the QR code from a computer.</span>
             </li>
             <li className="flex gap-3">
               <span className="flex-shrink-0 flex items-center justify-center size-6 rounded-full text-[0.75rem] font-bold" style={{ background: 'rgba(29,140,248,0.15)', color: 'var(--color-accent)' }}>3</span>
-              Tap <strong className="text-white">Accept</strong>, then <strong className="text-white">Install</strong>. PitcherML will appear on your home screen like any other app.
+              <span>Tap Accept, then Install. PitcherML will appear on your home screen like any other app.</span>
             </li>
           </ol>
+        </div>
+
+        {/* Optional -- not required to get the app, just a way for people
+            who want updates to leave contact info. */}
+        <div className="mt-8 pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          {emailStatus === 'done' ? (
+            <p className="flex items-center justify-center gap-2 text-[0.85rem] font-semibold" style={{ color: 'var(--color-positive)' }}>
+              <Check size={15} /> Thanks — we'll keep you posted.
+            </p>
+          ) : (
+            <>
+              <p className="text-[0.8rem] text-white/45 mb-3">Want updates on new features? Leave your email (optional).</p>
+              <form onSubmit={submitEmail} className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.03] px-4 py-2 w-full sm:w-auto sm:min-w-[16rem]">
+                  <Mail size={14} className="text-white/40 shrink-0" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                    className="bg-transparent outline-none text-sm w-full text-white placeholder:text-white/30"
+                  />
+                </div>
+                <button type="submit" disabled={emailStatus === 'sending'} className="btn-ghost w-full sm:w-auto">
+                  {emailStatus === 'sending' ? 'Sending…' : 'Keep me posted'}
+                </button>
+              </form>
+            </>
+          )}
+          {emailStatus === 'error' && (
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-[0.8rem]" style={{ color: 'var(--color-negative)' }}>
+              <X size={14} /> Something went wrong — try again in a moment.
+            </p>
+          )}
         </div>
       </div>
     </Reveal>
@@ -501,11 +511,9 @@ function ZoneGridDemo() {
    session videos, so file size directly affects page load time. Empty
    array falls back to the "coming soon" placeholder automatically. */
 const TRACED_EXAMPLES: { label: string; src: string }[] = [
-  { label: 'Cy Pitch 24', src: '/videos/clean-1.mp4' },
-  { label: 'Pitch 45', src: '/videos/clean-2.mp4' },
-  { label: 'Pitch 101', src: '/videos/clean-3.mp4' },
-  { label: 'Pitch 151', src: '/videos/clean-4.mp4' },
-  { label: 'Pitch 231', src: '/videos/clean-5.mp4' },
+  { label: 'Pitch 1', src: '/videos/clean-1.mp4' },
+  { label: 'Pitch 2', src: '/videos/clean-4.mp4' },
+  { label: 'Pitch 3', src: '/videos/clean-5.mp4' },
 ];
 
 function TracedClipsShowcase() {
