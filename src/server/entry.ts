@@ -31,6 +31,7 @@ import sessions_sessionId_calibrate_post_20 from "./api/sessions/[sessionId]/cal
 import sessions_sessionId_end_post_21 from "./api/sessions/[sessionId]/end/POST";
 import sessions_sessionId_report_get_22 from "./api/sessions/[sessionId]/report/GET";
 import video_analyses_id_put_23 from "./api/video-analyses/[id]/PUT";
+import app_access_requests_post_24 from "./api/app-access-requests/POST";
 // </api-imports>
 import { seoRoutes } from "../lib/seo-routes";
 import {
@@ -208,6 +209,7 @@ app.post("/api/video-analyses", (req: Request, res: Response, next: NextFunction
 }, video_analyses_post_15);
 app.get("/api/video-analyses/:id", video_analyses_id_get_16);
 app.put("/api/video-analyses/:id", video_analyses_id_put_23);
+app.post("/api/app-access-requests", app_access_requests_post_24);
 app.get("/api/players/:playerId/pitches", players_playerId_pitches_get_17);
 // ── Session lifecycle ────────────────────────────────────────────────────────
 // Note: these more-specific paths are registered here, and Express matches

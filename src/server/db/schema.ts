@@ -155,3 +155,11 @@ export const pitches = mysqlTable('pitches', {
   pitchNumber: int('pitch_number'),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// ─── TestFlight / early access requests (landing page) ─────────────────────────
+
+export const appAccessRequests = mysqlTable('app_access_requests', {
+  id: int('id').primaryKey().autoincrement(),
+  email: varchar('email', { length: 255 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
